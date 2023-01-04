@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
-from io import TextIOWrapper
+import enum
+import io
 import json
 import time
 import serial
@@ -185,7 +186,7 @@ class ConsultInterface:
 
 
 class SerialConsultInterface(ConsultInterface):
-    def __init__(self, port_number: int, log_file: TextIOWrapper = None):
+    def __init__(self, port_number: int, log_file: io.TextIOWrapper = None):
         self._port = serial.Serial(port_number, 9600, timeout=None)
         self._log_file = log_file
         super().__init__()
@@ -202,7 +203,7 @@ class SerialConsultInterface(ConsultInterface):
 
 
 class LogReplayConsultInterface(ConsultInterface):
-    def __init__(self, log_file: TextIOWrapper):
+    def __init__(self, log_file: io.TextIOWrapper):
         self._log_file = log_file
         super().__init__()
 
@@ -245,11 +246,67 @@ def port_read_fault_codes(interface: ConsultInterface):
         return codes
 
 def port_read_registers(interface: ConsultInterface):
-    return {}
+    class RegisterParameters(enum.IntEnum):
+        ENGINE_RPM_MSB = 0x00
+        ENGINE_RPM_LSB = 0x01
+        LH_MAF_VOLTAGE_MSB = 0x04
+        LH_MAF_VOLTAGE_LSB = 0x05
+        RH_MAF_VOLTAGE_MSB = 0x06
+        RH_MAF_VOLTAGE_LSB = 0x07
+        COOLANT_TEMP = 0x08
+        LH_O2_SENSOR_VOLTAGE = 0x09
+        RH_O2_SENSOR_VOLTAGE = 0x0A
+        VEHICLE_SPEED = 0x0B
+        BATTERY_VOLTAGE = 0x0C
+        THROTTLE_POSITION = 0x0D
+        FUEL_TEMP = 0x0F
+        INTAKE_AIR_TEMP = 0x11
+        EXHAUST_GAS_TEMP = 0x12
+        DIGITAL_BIT_REGISTER1 = 0x13
+        LH_INJECTION_TIMING_MSB = 0x14
+        LH_INJECTION_TIMING_LSB = 0x15
+        IGNITION_TIMING = 0x16
+        AAC_VALVE = 0x17
+        LH_AF_ALPHA = 0x1A
+        RH_AF_ALPHA = 0x1B
+        LH_AF_ALPHA_SELFLEARN = 0x1C
+        RH_AF_ALPHA_SELFLEARN = 0x1D
+        DIGITAL_BIT_REGISTER2 = 0x1E
+        DIGITAL_BIT_REGISTER3 = 0x1F
+        MR_FC_MNT = 0x21
+        RH_INJECTION_TIMING_MSB = 0x22
+        RH_INJECTION_TIMING_LSB = 0x23
+        WASTE_GATE_SOLENOID = 0x28
+        TURBO_BOOST_SENSOR = 0x29
+        ENGINE_MOUNT = 0x2A
+        POSITION_COUNTER = 0x2E
+        PURGE_CONTROL_VALVE = 0x25
+        TANK_FUEL_TEMP = 0x26
+        FPCM_DR_VOLTAGE = 0x27
+        FUEL_GAUGE_VOLTAGE = 0x2F
+
+    registers = (RegisterParameters.ENGINE_RPM_MSB,
+                 RegisterParameters.ENGINE_RPM_LSB,
+                 RegisterParameters.VEHICLE_SPEED,
+                 RegisterParameters.BATTERY_VOLTAGE)
+    command = bytes(sum(zip([0x5A] * len(registers), registers), tuple()))
+
+    with interface.execute(command, data_width=1) as frames:
+        frame = next(frame)
+
+        print(len(frame))
+        engine_rpm = int((frame[0] << 8 + frame[1]) * 12.5)
+        vehicle_speed_kph = frame[2] * 2
+        battery_voltage_v = (frame[3] * 80) / 1000
+        return {
+            'engine_rpm': engine_rpm,
+            'vehicle_speed_kph': vehicle_speed_kph,
+            'battery_voltage_v': battery_voltage_v,
+        }
 
 def main():
-    if sys.version_info < (3,2):
-        sys.exit('This script requires Python 3.2 or higher.\n')
+    if sys.version_info < (3,4):
+        sys.exit('This script requires Python 3.4 or higher.\n')
 
     parser = argparse.ArgumentParser(prog = 'open_consult_test')
     parser.add_argument('device',
