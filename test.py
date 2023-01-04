@@ -148,16 +148,39 @@ class ConsultInterface:
             self._read(data_bytes)
             response = self._read()
 
-    def execute(self, command: bytes) -> ConsultResponse:
-        assert len(command) == 1
-        expected_response = (255 - command[0]).to_bytes(1, 'big')
+    def execute(self, request: bytes, command_width: int = 1, data_width: int = -1) -> ConsultResponse:
+        # Calculate expected response.
+        if command_width < 0:
+            command_width = len(request)
+        if data_width < 0:
+            data_width = len(request) - command_width
+        is_command_byte = command_width > 0
+        parsed_command_width = 0
+        parsed_data_width = 0
+        expected_response = []
+        for byte in request:
+            if is_command_byte:
+                expected_response.append(255 - byte)
+                parsed_command_width += 1
+                if parsed_command_width >= command_width:
+                    is_command_byte = data_width == 0
+                    parsed_command_width = 0
+            else:
+                expected_response.append(byte)
+                parsed_data_width += 1
+                if parsed_data_width >= data_width:
+                    is_command_byte = command_width > 0
+                    parsed_data_width = 0
+        expected_response = bytes(expected_response)
 
-        self._write(command) # Send command
-        response = self._read()
-        assert response == expected_response, f'ECU\'s echoed command byte ({hex(response[0])}) was ' \
-                f'incorrect (should be {hex(expected_response[0])} for command {hex(command[0])}).'
+        # Transmit the request and check the response matches.
+        self._write(request)
+        response = self._read(len(expected_response))
+        assert response == expected_response, f'ECU\'s response ({response.hex()}) was incorrect '\
+                f'(should be {expected_response.hex()} for request {request.hex()}).'
 
-        self._write(b'\xF0') # Send go-ahead
+        # Send go-ahead and return a frame reader.
+        self._write(b'\xF0')
         return ConsultResponse(self._yield_frames, self._halt)
 
 
