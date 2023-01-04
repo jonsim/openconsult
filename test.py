@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+from io import TextIOWrapper
 import json
 import time
 import serial
+import sys
 
 dtc_codes = {
     11: ('Crankshaft position sensor signal circuit',
@@ -12,7 +14,7 @@ dtc_codes = {
     12: ('Mass air flow sensor signal circuit',
         'Mass air flow sensor output voltage is 4.9V or greater for predetermined time when ignition '
         'switch is turned from OFF to ON, or after the engine is stalled. Mass air flow sensor output voltage is less than 0.3V for predetermined time while the engine is running.'),
-    13: ('Engine cooland temperature sensor signal circuit',
+    13: ('Engine coolant temperature sensor signal circuit',
         'Engine coolant temperature sensor output voltage is approx. 4.8V or greater (open circuit) or less than 0.06V (short circuit) for predetermined time.'),
     14: ('Vehicle speed sensor signal circuit',
         'No vehicle speed signal is input for predetermined time while the vehicle is being driven after warm up.'),
@@ -94,87 +96,140 @@ dtc_codes = {
 }
 
 
+class ConsultResponse:
+    def __init__(self, frame_fetcher, terminator):
+        self._frame_fetcher = frame_fetcher
+        self._terminator = terminator
 
-def read_and_log(port, size=1, log_file=None):
-    response = port.read(size)
-    if log_file:
-        log_file.write(response)
-    return response
+    def __enter__(self):
+        yield from self._frame_fetcher()
 
-def read_until_stop(port, log_file=None):
-    b = None
-    while b != b'\xCF': # Wait until stop acknowledgement is received.
-        b = read_and_log(port, 1, log_file)
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._terminator:
+            self._terminator()
 
-def port_initialise(port, log_file = None):
-    connected = False
-    while not connected:
-        port.flushInput()
-        port.write(b'\xFF\xFF\xEF')
-        time.sleep(2)
-        response = read_and_log(port, 1, log_file)
-        connected = response == b'\x10'
-    # Discard anything left in the buffer (hopefully nothing)...
-    #port.reset_input_buffer()
 
-def port_read_ecu_part_number(port, log_file = None):
-    def parse_response(data):
-        x1 = ord(data[2])
-        x2 = ord(data[3])
-        y1 = ord(data[19])
-        y2 = ord(data[20])
-        y3 = ord(data[21])
+class ConsultInterface:
+    def __init__(self):
+        self._connect()
+
+    def _read(self, size: int = 1) -> bytes:
+        raise NotImplementedError
+
+    def _write(self, data: bytes) -> None:
+        raise NotImplementedError
+
+    def _connect(self) -> None:
+        connected = False
+        while not connected:
+            self._write(b'\xFF\xFF\xEF')
+            time.sleep(1)
+            response = self._read()
+            connected = response == b'\x10'
+
+    def _read_frame(self):
+        response = self._read(2)
+        assert response[0] == 0xFF, f'Frame header did not start with start byte: {response}'
+        data_bytes = response[1]    # Data bytes to follow
+        return self._read(data_bytes)
+
+    def _yield_frames(self):
+        while True:
+            yield self._read_frame()
+
+    def _halt(self):
+        self._write(b'\x30')
+        response = self._read()
+        while response != b'\xCF':
+            # There's another frame coming - read it then look for another
+            # stop-ack afterwards.
+            assert response == b'\xFF', f'Frame header did not start with start byte: {response}'
+            data_bytes = self._read()[0]
+            self._read(data_bytes)
+            response = self._read()
+
+    def execute(self, command: bytes) -> ConsultResponse:
+        assert len(command) == 1
+        expected_response = (255 - command[0]).to_bytes(1, 'big')
+
+        self._write(command) # Send command
+        response = self._read()
+        assert response == expected_response, f'ECU\'s echoed command byte ({hex(response[0])}) was ' \
+                f'incorrect (should be {hex(expected_response[0])} for command {hex(command[0])}).'
+
+        self._write(b'\xF0') # Send go-ahead
+        return ConsultResponse(self._yield_frames, self._halt)
+
+
+class SerialConsultInterface(ConsultInterface):
+    def __init__(self, port_number: int, log_file: TextIOWrapper = None):
+        self._port = serial.Serial(port_number, 9600, timeout=None)
+        self._log_file = log_file
+        super().__init__()
+
+    def _read(self, size: int = 1) -> bytes:
+        data = self._port.read(size)
+        if self._log_file:
+            self._log_file.write(data)
+        return data
+
+    def _write(self, data: bytes) -> None:
+        self._port.write(data)
+
+
+
+class LogReplayConsultInterface(ConsultInterface):
+    def __init__(self, log_file: TextIOWrapper):
+        self._log_file = log_file
+        super().__init__()
+
+    def _read(self, size: int = 1) -> bytes:
+        return self._log_file.read(size)
+
+    def _write(self, data: bytes) -> None:
+        # TODO: improve this to track state.
+        pass
+
+
+
+def port_read_ecu_part_number(interface: ConsultInterface):
+    with interface.execute(b'\xD0') as frames:
+        frame = next(frames)
+
+        x1 = frame[2]
+        x2 = frame[3]
+        y1 = frame[19]
+        y2 = frame[20]
+        y3 = frame[21]
         return {
             'part_number': f'{x1:X}{x2:X} 23710-{y1:X}{y2:X}{y3:X}',
         }
-    # Send part number command.
-    port.write(b'\xD0\xF0')
-    # Read response.
-    data = read_and_log(port, 22, log_file)
-    assert data[0] == b'\x2F' # Inverted command byte
-    assert data[1] == b'\xFF' # Frame start byte
-    # Send stop command.
-    port.write(b'\x30')
-    read_until_stop(port, log_file)
-    # Discard anything left in the buffer (hopefully nothing)...
-    #port.reset_input_buffer()
-    return parse_response(data)
 
-def port_read_fault_codes(port, log_file = None):
-    def parse_response(data):
-        assert len(data) % 2 == 0
+def port_read_fault_codes(interface: ConsultInterface):
+    with interface.execute(b'\xD1') as frames:
+        frame = next(frames)
+
+        assert len(frame) % 2 == 0
         codes = []
-        for code, count in zip(data[0::2], data[1::2]):
-            name, desc = dtc_codes[ord(code)]
-            count = ord(count)
+        for code, starts in zip(frame[0::2], frame[1::2]):
+            name, desc = dtc_codes[code]
             codes.append({
+                'code': code,
                 'name': name,
                 'description': desc,
-                'count': count,
+                'starts_since_fault': starts,
             })
         return codes
 
-    # Send DTC command.
-    port.write(b'\xD1\xF0')
-    # Read response.
-    data = read_and_log(port, 3, log_file)
-    assert data[0] == b'\x2E' # Inverted command byte
-    assert data[1] == b'\xFF' # Frame start byte
-    data_bytes = ord(data[2]) # Data bytes to follow
-    data = read_and_log(port, data_bytes, log_file)
-    # Send stop command.
-    port.write(b'\x30')
-    read_until_stop(port, log_file)
-    # Discard anything left in the buffer (hopefully nothing)...
-    #port.reset_input_buffer()
-    return parse_response(data)
-
-def port_read_registers(port, log_file = None):
+def port_read_registers(interface: ConsultInterface):
     return {}
 
 def main():
+    if sys.version_info < (3,2):
+        sys.exit('This script requires Python 3.2 or higher.\n')
+
     parser = argparse.ArgumentParser(prog = 'open_consult_test')
-    parser.add_argument('port',
+    parser.add_argument('device',
                         type=str,
                         default='/dev/ttyUSB0',
                         help='Name of the serial device to communicate with.')
@@ -182,44 +237,46 @@ def main():
                         type=str,
                         default=None,
                         help='Path to a file to dump all received data to.')
+    parser.add_argument('--replay',
+                        action='store_true',
+                        help='Interpret the serial device as a previous log file and replay it.')
     args = parser.parse_args()
 
-    # If asked to log, open a file to do so.
-    if args.log:
-        log_file = open(args.log, 'wb')
+    # If asked to replay, do so.
+    if args.replay:
+        log_file = open(args.device, 'rb')
+        interface = LogReplayConsultInterface(log_file)
     else:
-        log_file = None
+        # If asked to log, open a file to do so.
+        if args.log:
+            log_file = open(args.log, 'wb')
+        else:
+            log_file = None
+        interface = SerialConsultInterface(args.device, log_file)
 
     try:
-        # Connect to the specified serial device.
-        port = serial.Serial(args.port, 9600, timeout=None)
-
-        # Run the initialisation sequence and wait until the connection is accepted.
-        port_initialise(port, log_file)
-
         # Read and print the ECU part number.
-        fault_codes = port_read_ecu_part_number(port, log_file)
+        fault_codes = port_read_ecu_part_number(interface)
         print('ECU PART NUMBER\n'
-            '===============')
-        json.dumps(fault_codes)
+              '===============\n' +
+              json.dumps(fault_codes, indent=2))
 
         # Read and print the fault codes.
-        fault_codes = port_read_fault_codes(port, log_file)
+        fault_codes = port_read_fault_codes(interface)
         print('\n'
-            'FAULT CODES\n'
-            '===========')
-        json.dumps(fault_codes)
+              'FAULT CODES\n'
+              '===========\n' +
+              json.dumps(fault_codes, indent=2))
 
         # Read and print some register values.
-        registers = port_read_registers(port, log_file)
+        registers = port_read_registers(interface)
         print('\n'
-            'REGISTERS\n'
-            '=========')
-        json.dumps(registers)
-    except:
+              'REGISTERS\n'
+              '=========\n' +
+              json.dumps(registers, indent=2))
+    finally:
         if log_file:
             log_file.close()
-        raise
 
 
 if __name__ == '__main__':
