@@ -97,6 +97,164 @@ dtc_codes = {
 }
 
 
+
+class SerialDeviceLog:
+    class EntryType(enum.Enum):
+        READ = enum.auto()
+        WRITE = enum.auto()
+    EntryType.READ.log_prefix = 'R: '
+    EntryType.WRITE.log_prefix = 'W: '
+
+    def __init__(self, path):
+        self._path = path
+        self._last_entry_type = None
+
+    def __enter__(self):
+        self._file = open(self._path, 'w')
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._file.close()
+
+    def log_read(self, data: bytes):
+        if self._last_entry_type != self.EntryType.READ:
+            self._file.write('\n' + self.EntryType.READ.log_prefix)
+            self._last_entry_type = self.EntryType.READ
+        self._file.write(data.hex())
+
+    def log_write(self, data: bytes):
+        if self._last_entry_type != self.EntryType.WRITE:
+            self._file.write('\n' + self.EntryType.WRITE.log_prefix)
+            self._last_entry_type = self.EntryType.WRITE
+        self._file.write(data.hex())
+
+
+class ByteInterface:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    def read(self, size: int = 1) -> bytes:
+        raise NotImplementedError
+
+    def write(self, data: bytes) -> None:
+        raise NotImplementedError
+
+
+class SerialDevice(ByteInterface):
+    def __init__(self, device: str, log: SerialDeviceLog = None):
+        self._port = serial.Serial(device, 9600, timeout=None)
+        self._log = log
+
+    def __enter__(self):
+        if self._log:
+            self._log.__enter__()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._log:
+            self._log.__exit__()
+
+    def read(self, size: int = 1) -> bytes:
+        data = self._port.read(size)
+        if self._log:
+            self._log.log_read(data)
+        return data
+
+    def write(self, data: bytes) -> None:
+        self._port.write(data)
+        if self._log:
+            self._log.log_write(data)
+
+
+class SerialDeviceReplay(ByteInterface):
+    EntryType = SerialDeviceLog.EntryType
+
+    def __init__(self, path, wrap_reads = False, wrap_writes = False):
+        self._path = path
+        self._wrap_reads = wrap_reads
+        self._wrap_writes = wrap_writes
+        self._read_buffer = ''
+        self._write_buffer = ''
+        self._read_cursor = 0
+        self._write_cursor = 0
+
+    def __enter__(self):
+        self._file = open(self._path, 'r')
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._file.close()
+
+    def _fill_read_buffer(self):
+        assert not self._read_buffer
+        self._file.seek(self._read_cursor)
+        line = self._file.readline().strip()
+        while line:
+            if line.startswith(self.EntryType.READ.log_prefix):
+                self._read_buffer = line[len(self.EntryType.READ.log_prefix):]
+                self._read_cursor = self._file.tell()
+                break
+            line = self._file.readline().strip()
+        else:
+            if self._wrap_reads:
+                self._read_cursor = 0
+                self._fill_read_buffer()
+            else:
+                raise TimeoutError('No more read data in replay')
+
+    def _fill_write_buffer(self):
+        assert not self._write_buffer
+        self._file.seek(self._write_cursor)
+        line = self._file.readline().strip()
+        while line:
+            if line.startswith(self.EntryType.WRITE.log_prefix):
+                self._write_buffer = line[len(self.EntryType.WRITE.log_prefix):]
+                self._write_cursor = self._file.tell()
+                break
+            line = self._file.readline().strip()
+        else:
+            if self._wrap_writes:
+                self._write_cursor = 0
+                self._fill_write_buffer()
+            else:
+                raise TimeoutError('No more write data in replay')
+        # TODO: also move read cursor?
+
+    def read(self, bytes_size: int = 1) -> bytes:
+        str_size = bytes_size * 2
+        if not self._read_buffer:
+            self._fill_read_buffer()
+        if len(self._read_buffer) >= str_size:
+            data_bytes = bytes.fromhex(self._read_buffer[:str_size])
+            self._read_buffer = self._read_buffer[str_size:]
+        else:
+            data_bytes = bytes.fromhex(self._read_buffer)
+            self._read_buffer = ''
+            data_bytes += self.read(bytes_size - len(data_bytes))
+        return data_bytes
+
+    def write(self, data_bytes: bytes) -> None:
+        data_str = data_bytes.hex()
+        while True:
+            # TODO: would be nice if we didn't infinitely loop if the log can
+            # never fulfil the write.
+            # Is the write buffer long enough to contain the requested write
+            # data? If not discard and refill.
+            if len(self._write_buffer) < len(data_str):
+                self._write_buffer = ''
+                self._fill_write_buffer()
+                continue
+            # Is our write data in the write buffer? If not discard and refill.
+            pos = self._write_buffer.find(data_str)
+            if pos < 0:
+                self._write_buffer = ''
+                self._fill_write_buffer()
+                continue
+            # If it is, drain up to the write data.
+            self._write_buffer = self._write_buffer[pos + len(data_str):]
+            break
+
+
 class ConsultResponse:
     def __init__(self, frame_fetcher, terminator):
         self._frame_fetcher = frame_fetcher
@@ -111,43 +269,38 @@ class ConsultResponse:
 
 
 class ConsultInterface:
-    def __init__(self):
+    def __init__(self, device: ByteInterface):
+        self._device = device
         self._connect()
-
-    def _read(self, size: int = 1) -> bytes:
-        raise NotImplementedError
-
-    def _write(self, data: bytes) -> None:
-        raise NotImplementedError
 
     def _connect(self) -> None:
         connected = False
         while not connected:
-            self._write(b'\xFF\xFF\xEF')
+            self._device.write(b'\xFF\xFF\xEF')
             time.sleep(1)
-            response = self._read()
+            response = self._device.read()
             connected = response == b'\x10'
 
     def _read_frame(self):
-        response = self._read(2)
+        response = self._device.read(2)
         assert response[0] == 0xFF, f'Frame header did not start with start byte: {response}'
         data_bytes = response[1]    # Data bytes to follow
-        return self._read(data_bytes)
+        return self._device.read(data_bytes)
 
     def _yield_frames(self):
         while True:
             yield self._read_frame()
 
     def _halt(self):
-        self._write(b'\x30')
-        response = self._read()
+        self._device.write(b'\x30')
+        response = self._device.read()
         while response != b'\xCF':
             # There's another frame coming - read it then look for another
             # stop-ack afterwards.
             assert response == b'\xFF', f'Frame header did not start with start byte: {response}'
-            data_bytes = self._read()[0]
-            self._read(data_bytes)
-            response = self._read()
+            data_bytes = self._device.read()[0]
+            self._device.read(data_bytes)
+            response = self._device.read()
 
     def execute(self, request: bytes, command_width: int = 1, data_width: int = -1) -> ConsultResponse:
         # Calculate expected response.
@@ -175,44 +328,14 @@ class ConsultInterface:
         expected_response = bytes(expected_response)
 
         # Transmit the request and check the response matches.
-        self._write(request)
-        response = self._read(len(expected_response))
+        self._device.write(request)
+        response = self._device.read(len(expected_response))
         assert response == expected_response, f'ECU\'s response ({response.hex()}) was incorrect '\
                 f'(should be {expected_response.hex()} for request {request.hex()}).'
 
         # Send go-ahead and return a frame reader.
-        self._write(b'\xF0')
+        self._device.write(b'\xF0')
         return ConsultResponse(self._yield_frames, self._halt)
-
-
-class SerialConsultInterface(ConsultInterface):
-    def __init__(self, port_number: int, log_file: io.TextIOWrapper = None):
-        self._port = serial.Serial(port_number, 9600, timeout=None)
-        self._log_file = log_file
-        super().__init__()
-
-    def _read(self, size: int = 1) -> bytes:
-        data = self._port.read(size)
-        if self._log_file:
-            self._log_file.write(data)
-        return data
-
-    def _write(self, data: bytes) -> None:
-        self._port.write(data)
-
-
-
-class LogReplayConsultInterface(ConsultInterface):
-    def __init__(self, log_file: io.TextIOWrapper):
-        self._log_file = log_file
-        super().__init__()
-
-    def _read(self, size: int = 1) -> bytes:
-        return self._log_file.read(size)
-
-    def _write(self, data: bytes) -> None:
-        # TODO: improve this to track state.
-        pass
 
 
 
@@ -304,8 +427,8 @@ def port_read_registers(interface: ConsultInterface):
         }
 
 def main():
-    if sys.version_info < (3,4):
-        sys.exit('This script requires Python 3.4 or higher.\n')
+    if sys.version_info < (3,5):
+        sys.exit('This script requires Python 3.5 or higher.\n')
 
     parser = argparse.ArgumentParser(prog = 'open_consult_test')
     parser.add_argument('device',
@@ -323,17 +446,15 @@ def main():
 
     # If asked to replay, do so.
     if args.replay:
-        log_file = open(args.device, 'rb')
-        interface = LogReplayConsultInterface(log_file)
+        device = SerialDeviceReplay(args.device)
     else:
         # If asked to log, open a file to do so.
-        if args.log:
-            log_file = open(args.log, 'wb')
-        else:
-            log_file = None
-        interface = SerialConsultInterface(args.device, log_file)
+        log = SerialDeviceLog(args.log) if args.log else None
+        device = SerialDevice(args.device, log)
 
-    try:
+    with device:
+        interface = ConsultInterface(device)
+
         # Read and print the ECU part number.
         fault_codes = port_read_ecu_part_number(interface)
         print('ECU PART NUMBER\n'
@@ -353,9 +474,6 @@ def main():
               'REGISTERS\n'
               '=========\n' +
               json.dumps(registers, indent=2))
-    finally:
-        if log_file:
-            log_file.close()
 
 
 if __name__ == '__main__':
