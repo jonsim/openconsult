@@ -292,10 +292,9 @@ def port_read_registers(interface: ConsultInterface):
     command = bytes(sum(zip([0x5A] * len(registers), registers), tuple()))
 
     with interface.execute(command, data_width=1) as frames:
-        frame = next(frame)
-
-        print(len(frame))
-        engine_rpm = int((frame[0] << 8 + frame[1]) * 12.5)
+        frame = next(frames)
+        assert len(frame) == len(registers), f'Unexpected frame data {frame}'
+        engine_rpm = int(((frame[0] << 8) + frame[1]) * 12.5)
         vehicle_speed_kph = frame[2] * 2
         battery_voltage_v = (frame[3] * 80) / 1000
         return {
