@@ -94,6 +94,47 @@ dtc_codes = {
     128: ('Automatic Transmission Fluid Temperature Sensor', None),
 }
 
+class RegisterParameters(enum.IntEnum):
+    # For engines with a single cylinder bank, use the LH_ parameter
+    # variants.
+    ENGINE_RPM_MSB = 0x00
+    ENGINE_RPM_LSB = 0x01
+    LH_MAF_VOLTAGE_MSB = 0x04
+    LH_MAF_VOLTAGE_LSB = 0x05
+    RH_MAF_VOLTAGE_MSB = 0x06
+    RH_MAF_VOLTAGE_LSB = 0x07
+    COOLANT_TEMP = 0x08
+    LH_O2_SENSOR_VOLTAGE = 0x09
+    RH_O2_SENSOR_VOLTAGE = 0x0A
+    VEHICLE_SPEED = 0x0B
+    BATTERY_VOLTAGE = 0x0C
+    THROTTLE_POSITION = 0x0D
+    FUEL_TEMP = 0x0F
+    INTAKE_AIR_TEMP = 0x11
+    EXHAUST_GAS_TEMP = 0x12
+    DIGITAL_BIT_REGISTER1 = 0x13
+    LH_INJECTION_TIMING_MSB = 0x14
+    LH_INJECTION_TIMING_LSB = 0x15
+    IGNITION_TIMING = 0x16
+    AAC_VALVE = 0x17
+    LH_AF_ALPHA = 0x1A
+    RH_AF_ALPHA = 0x1B
+    LH_AF_ALPHA_SELFLEARN = 0x1C
+    RH_AF_ALPHA_SELFLEARN = 0x1D
+    DIGITAL_BIT_REGISTER2 = 0x1E
+    DIGITAL_BIT_REGISTER3 = 0x1F
+    MR_FC_MNT = 0x21
+    RH_INJECTION_TIMING_MSB = 0x22
+    RH_INJECTION_TIMING_LSB = 0x23
+    WASTE_GATE_SOLENOID = 0x28
+    TURBO_BOOST_SENSOR = 0x29
+    ENGINE_MOUNT = 0x2A
+    POSITION_COUNTER = 0x2E
+    PURGE_CONTROL_VALVE = 0x25
+    TANK_FUEL_TEMP = 0x26
+    FPCM_DR_VOLTAGE = 0x27
+    FUEL_GAUGE_VOLTAGE = 0x2F
+
 
 
 class SerialDeviceLog:
@@ -300,9 +341,11 @@ class ConsultInterface:
             self._device.read(data_bytes)
             response = self._device.read()
 
-    def execute(self, request: bytes, command_width: int = 1, data_width: int = -1) -> ConsultResponse:
+    def execute(self, request: bytes, command_width: int = 1, data_width: int = -1, verify: bool = None) -> ConsultResponse:
+        if verify is None:
+            verify = self._verify
         # Calculate expected response.
-        if self._verify:
+        if verify:
             if command_width < 0:
                 command_width = len(request)
             if data_width < 0:
@@ -332,7 +375,7 @@ class ConsultInterface:
         # Transmit the request and check the response matches.
         self._device.write(request)
         response = self._device.read(expected_response_len)
-        if self._verify:
+        if verify:
             assert response == expected_response, \
                     f'ECU\'s response ({response.hex()}) was incorrect (should be '\
                     f'{expected_response.hex()} for request {request.hex()}).'
@@ -373,47 +416,6 @@ def port_read_fault_codes(interface: ConsultInterface):
         return codes
 
 def port_read_registers(interface: ConsultInterface):
-    class RegisterParameters(enum.IntEnum):
-        # For engines with a single cylinder bank, use the LH_ parameter
-        # variants.
-        ENGINE_RPM_MSB = 0x00
-        ENGINE_RPM_LSB = 0x01
-        LH_MAF_VOLTAGE_MSB = 0x04
-        LH_MAF_VOLTAGE_LSB = 0x05
-        RH_MAF_VOLTAGE_MSB = 0x06
-        RH_MAF_VOLTAGE_LSB = 0x07
-        COOLANT_TEMP = 0x08
-        LH_O2_SENSOR_VOLTAGE = 0x09
-        RH_O2_SENSOR_VOLTAGE = 0x0A
-        VEHICLE_SPEED = 0x0B
-        BATTERY_VOLTAGE = 0x0C
-        THROTTLE_POSITION = 0x0D
-        FUEL_TEMP = 0x0F
-        INTAKE_AIR_TEMP = 0x11
-        EXHAUST_GAS_TEMP = 0x12
-        DIGITAL_BIT_REGISTER1 = 0x13
-        LH_INJECTION_TIMING_MSB = 0x14
-        LH_INJECTION_TIMING_LSB = 0x15
-        IGNITION_TIMING = 0x16
-        AAC_VALVE = 0x17
-        LH_AF_ALPHA = 0x1A
-        RH_AF_ALPHA = 0x1B
-        LH_AF_ALPHA_SELFLEARN = 0x1C
-        RH_AF_ALPHA_SELFLEARN = 0x1D
-        DIGITAL_BIT_REGISTER2 = 0x1E
-        DIGITAL_BIT_REGISTER3 = 0x1F
-        MR_FC_MNT = 0x21
-        RH_INJECTION_TIMING_MSB = 0x22
-        RH_INJECTION_TIMING_LSB = 0x23
-        WASTE_GATE_SOLENOID = 0x28
-        TURBO_BOOST_SENSOR = 0x29
-        ENGINE_MOUNT = 0x2A
-        POSITION_COUNTER = 0x2E
-        PURGE_CONTROL_VALVE = 0x25
-        TANK_FUEL_TEMP = 0x26
-        FPCM_DR_VOLTAGE = 0x27
-        FUEL_GAUGE_VOLTAGE = 0x2F
-
     registers = (RegisterParameters.ENGINE_RPM_MSB,
                  RegisterParameters.ENGINE_RPM_LSB,
                  RegisterParameters.VEHICLE_SPEED,
@@ -431,6 +433,17 @@ def port_read_registers(interface: ConsultInterface):
             'vehicle_speed_kph': vehicle_speed_kph,
             'battery_voltage_v': battery_voltage_v,
         }
+
+def port_capability_scan(interface: ConsultInterface):
+    # For now this is only going to work if command verification is disabled.
+    capability_matrix = {}
+    for register in RegisterParameters:
+        try:
+            with interface.execute(b'\x5A' + bytes(register), data_width=1, verify=False):
+                capability_matrix[register] = True
+        except:
+            capability_matrix[register] = False
+    return {str(r.name): v for r, v in capability_matrix.items()}
 
 def main():
     if sys.version_info < (3,5):
@@ -485,6 +498,13 @@ def main():
               'REGISTERS\n'
               '=========\n' +
               json.dumps(registers, indent=2))
+
+        # Attempt a capability scan.
+        capabilities = port_capability_scan(interface)
+        print('\n'
+              'CAPABILITY_MATRIX\n'
+              '=================\n' +
+              json.dumps(capabilities, indent=2))
 
 
 if __name__ == '__main__':
