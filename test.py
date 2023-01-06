@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import enum
-import io
 import json
-import time
 import serial
 import sys
 
@@ -218,7 +216,9 @@ class SerialDeviceReplay(ByteInterface):
                 self._fill_write_buffer()
             else:
                 raise TimeoutError('No more write data in replay')
-        # TODO: also move read cursor?
+        # Advance the read cursor to the new write cursor so any subsequent
+        # reads following the right return the correct response.
+        self._read_cursor = self._write_cursor
 
     def read(self, bytes_size: int = 1) -> bytes:
         str_size = bytes_size * 2
@@ -274,12 +274,9 @@ class ConsultInterface:
         self._connect()
 
     def _connect(self) -> None:
-        connected = False
-        while not connected:
-            self._device.write(b'\xFF\xFF\xEF')
-            time.sleep(1)
-            response = self._device.read()
-            connected = response == b'\x10'
+        self._device.write(b'\xFF\xFF\xEF')
+        while self._device.read() != b'\x10':
+            pass
 
     def _read_frame(self):
         response = self._device.read(2)
@@ -370,6 +367,8 @@ def port_read_fault_codes(interface: ConsultInterface):
 
 def port_read_registers(interface: ConsultInterface):
     class RegisterParameters(enum.IntEnum):
+        # For engines with a single cylinder bank, use the LH_ parameter
+        # variants.
         ENGINE_RPM_MSB = 0x00
         ENGINE_RPM_LSB = 0x01
         LH_MAF_VOLTAGE_MSB = 0x04
