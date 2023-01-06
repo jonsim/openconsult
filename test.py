@@ -269,8 +269,9 @@ class ConsultResponse:
 
 
 class ConsultInterface:
-    def __init__(self, device: ByteInterface):
+    def __init__(self, device: ByteInterface, verify: bool = True):
         self._device = device
+        self._verify = verify
         self._connect()
 
     def _connect(self) -> None:
@@ -301,34 +302,40 @@ class ConsultInterface:
 
     def execute(self, request: bytes, command_width: int = 1, data_width: int = -1) -> ConsultResponse:
         # Calculate expected response.
-        if command_width < 0:
-            command_width = len(request)
-        if data_width < 0:
-            data_width = len(request) - command_width
-        is_command_byte = command_width > 0
-        parsed_command_width = 0
-        parsed_data_width = 0
-        expected_response = []
-        for byte in request:
-            if is_command_byte:
-                expected_response.append(255 - byte)
-                parsed_command_width += 1
-                if parsed_command_width >= command_width:
-                    is_command_byte = data_width == 0
-                    parsed_command_width = 0
-            else:
-                expected_response.append(byte)
-                parsed_data_width += 1
-                if parsed_data_width >= data_width:
-                    is_command_byte = command_width > 0
-                    parsed_data_width = 0
-        expected_response = bytes(expected_response)
+        if self._verify:
+            if command_width < 0:
+                command_width = len(request)
+            if data_width < 0:
+                data_width = len(request) - command_width
+            is_command_byte = command_width > 0
+            parsed_command_width = 0
+            parsed_data_width = 0
+            expected_response = []
+            for byte in request:
+                if is_command_byte:
+                    expected_response.append(255 - byte)
+                    parsed_command_width += 1
+                    if parsed_command_width >= command_width:
+                        is_command_byte = data_width == 0
+                        parsed_command_width = 0
+                else:
+                    expected_response.append(byte)
+                    parsed_data_width += 1
+                    if parsed_data_width >= data_width:
+                        is_command_byte = command_width > 0
+                        parsed_data_width = 0
+            expected_response = bytes(expected_response)
+            expected_response_len = len(expected_response)
+        else:
+            expected_response_len = len(request)
 
         # Transmit the request and check the response matches.
         self._device.write(request)
-        response = self._device.read(len(expected_response))
-        assert response == expected_response, f'ECU\'s response ({response.hex()}) was incorrect '\
-                f'(should be {expected_response.hex()} for request {request.hex()}).'
+        response = self._device.read(expected_response_len)
+        if self._verify:
+            assert response == expected_response, \
+                    f'ECU\'s response ({response.hex()}) was incorrect (should be '\
+                    f'{expected_response.hex()} for request {request.hex()}).'
 
         # Send go-ahead and return a frame reader.
         self._device.write(b'\xF0')
@@ -441,6 +448,11 @@ def main():
     parser.add_argument('--replay',
                         action='store_true',
                         help='Interpret the serial device as a previous log file and replay it.')
+    parser.add_argument('--disable-command-verification',
+                        action='store_true',
+                        help='Disable verification of written commands. This will allow some '
+                             'erroring commands to complete (albeit probably returning the '
+                             'wrong data). Generally only a good idea for debugging.')
     args = parser.parse_args()
 
     # If asked to replay, do so.
@@ -452,7 +464,7 @@ def main():
         device = SerialDevice(args.device, log)
 
     with device:
-        interface = ConsultInterface(device)
+        interface = ConsultInterface(device, not args.disable_command_verification)
 
         # Read and print the ECU part number.
         fault_codes = port_read_ecu_part_number(interface)
