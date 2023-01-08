@@ -33,3 +33,6 @@
 
 # Bazel output
 /bazel-*
+
+# vscode junk
+/.vscode/*
