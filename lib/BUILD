@@ -4,13 +4,15 @@ cc_library(
     name = "openconsult",
     srcs = [
         "connection.cpp",
-        "serial.posix.cpp"
+        "log_replay.cpp",
+        "serial.posix.cpp",
     ],
     hdrs = [
         "byte_interface.h",
         "common.h",
         "connection.h",
-        "serial.h"
+        "log_replay.h",
+        "serial.h",
     ],
     visibility = ["//visibility:public"],
 )

@@ -44,7 +44,7 @@ public:
      * @throws os_error if the device cannot be opened or configured as
      *      requested.
      */
-    SerialPort(std::string device, uint32_t baud_rate);
+    SerialPort(const std::string& device, uint32_t baud_rate);
 
     /**
      * @brief Destroy the \c SerialPort object, closing the connection.

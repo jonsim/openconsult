@@ -47,7 +47,7 @@ speed_t baudRateToSpeed(uint32_t baud_rate) {
     };
 }
 
-SerialPort::SerialPort(std::string device, uint32_t baud_rate) {
+SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
     // Open the port.
     int fd = open(device.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {

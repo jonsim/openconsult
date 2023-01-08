@@ -13,7 +13,7 @@ std::string last_error() {
    return std::system_category().message(error);
 }
 
-SerialPort::SerialPort(std::string device, uint32_t baud_rate) {
+SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
     // Open the port.
     HANDLE handle = CreateFileA(static_cast<LPCSTR>(device.c_str()),
             GENERIC_READ | GENERIC_WRITE,
