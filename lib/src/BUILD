@@ -1,5 +1,3 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
-
 cc_library(
     name = "openconsult",
     srcs = [
@@ -15,4 +13,18 @@ cc_library(
         "serial.h",
     ],
     visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "byte_interface",
+    hdrs = ["byte_interface.h"],
+    visibility = ["//lib/test:__pkg__"],
+)
+
+cc_library(
+    name = "log_replay",
+    srcs = ["log_replay.cpp"],
+    hdrs = ["log_replay.h", "common.h"],
+    visibility = ["//lib/test:__pkg__"],
+    deps = ["byte_interface"]
 )
