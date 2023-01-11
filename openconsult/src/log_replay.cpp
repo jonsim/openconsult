@@ -113,12 +113,14 @@ LogReplay::LogReplay(const std::string& log_path) {
         throw std::runtime_error(error);
     }
     for (std::string line; std::getline(log_file, line);) {
-        impl->records.emplace_back(line);
+        pimpl->records.emplace_back(line);
     }
 }
 
+LogReplay::~LogReplay() = default;
+
 std::vector<uint8_t> LogReplay::read(std::size_t size) {
-    return impl->read(size);
+    return pimpl->read(size);
 }
 
 void LogReplay::write(std::vector<uint8_t> bytes) {

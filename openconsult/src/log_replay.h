@@ -9,6 +9,8 @@ class LogReplay : public ByteInterface
 public:
     LogReplay(const std::string& log_path);
 
+    virtual ~LogReplay();
+
     /**
      * @copydoc ByteInterface::read(std::size_t)
      */
@@ -20,8 +22,8 @@ public:
     virtual void write(std::vector<uint8_t> bytes) override;
 
 private:
-    struct impl;
-    std::unique_ptr<impl> impl;
+    class impl;
+    std::unique_ptr<impl> pimpl;
 };
 
 #endif
