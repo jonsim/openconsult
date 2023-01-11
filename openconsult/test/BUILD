@@ -6,6 +6,6 @@ cc_test(
     ],
     deps = [
         "@gtest//:gtest_main",
-        "//lib/src:log_replay"
+        "//openconsult/src:log_replay",
     ],
 )

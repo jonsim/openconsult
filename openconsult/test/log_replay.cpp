@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "lib/src/log_replay.h"
+#include "openconsult/src/log_replay.h"
 
 // Demonstrate some basic assertions.
 TEST(HelloTest, BasicAssertions) {

@@ -1,16 +1,11 @@
 cc_library(
     name = "openconsult",
-    srcs = [
-        "connection.cpp",
-        "log_replay.cpp",
-        "serial.posix.cpp",
-    ],
-    hdrs = [
-        "byte_interface.h",
-        "common.h",
-        "connection.h",
-        "log_replay.h",
-        "serial.h",
+    deps = [
+        "byte_interface",
+        "common",
+        "connection",
+        "log_replay",
+        "serial.posix",
     ],
     visibility = ["//visibility:public"],
 )
@@ -18,13 +13,39 @@ cc_library(
 cc_library(
     name = "byte_interface",
     hdrs = ["byte_interface.h"],
-    visibility = ["//lib/test:__pkg__"],
+    visibility = ["//openconsult/test:__pkg__"],
+)
+
+cc_library(
+    name = "common",
+    hdrs = ["common.h"],
+    visibility = ["//openconsult/test:__pkg__"],
+)
+
+cc_library(
+    name = "connection",
+    hdrs = ["connection.h"],
+    srcs = ["connection.cpp"],
+    visibility = ["//openconsult/test:__pkg__"],
 )
 
 cc_library(
     name = "log_replay",
+    hdrs = ["log_replay.h"],
     srcs = ["log_replay.cpp"],
-    hdrs = ["log_replay.h", "common.h"],
-    visibility = ["//lib/test:__pkg__"],
-    deps = ["byte_interface"]
+    deps = [
+        "byte_interface",
+        "common",
+    ],
+    visibility = ["//openconsult/test:__pkg__"],
+)
+
+cc_library(
+    name = "serial.posix",
+    hdrs = ["serial.h"],
+    srcs = ["serial.posix.cpp"],
+    deps = [
+        "common",
+    ],
+    visibility = ["//openconsult/test:__pkg__"],
 )
