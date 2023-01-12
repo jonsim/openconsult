@@ -1,4 +1,4 @@
-#include <fstream>
+#include <istream>
 #include <stdexcept>
 #include <stdlib.h>
 #include <vector>
@@ -18,7 +18,7 @@ struct LogRecord {
         // since the data is encoded to take 2 characters per byte, the line
         // must have an even length.
         if (line.length() < 4 || line.length() % 2) {
-            std::string error = string_format("Failed to parse line: %s", line);
+            std::string error = string_format("Failed to parse line: %s", line.c_str());
             throw std::invalid_argument(error);
         }
 
@@ -27,13 +27,13 @@ struct LogRecord {
             case 'R': type = LogRecordType::READ; break;
             case 'W': type = LogRecordType::WRITE; break;
             default:
-                std::string error = string_format("Failed to parse line: %s", line);
+                std::string error = string_format("Failed to parse line: %s", line.c_str());
                 throw std::invalid_argument(error);
         }
 
         // Ensure separator is present.
         if (line[1] != ' ') {
-            std::string error = string_format("Failed to parse line: %s", line);
+            std::string error = string_format("Failed to parse line: %s", line.c_str());
             throw std::invalid_argument(error);
         }
 
@@ -106,13 +106,9 @@ std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
 }
 
 
-LogReplay::LogReplay(const std::string& log_path) {
-    std::ifstream log_file(log_path, std::ifstream::in);
-    if (!log_file.is_open()) {
-        std::string error = string_format("Failed to open %s", log_path);
-        throw std::runtime_error(error);
-    }
-    for (std::string line; std::getline(log_file, line);) {
+LogReplay::LogReplay(std::istream& log_stream)
+        : pimpl(new impl) {
+    for (std::string line; std::getline(log_stream, line);) {
         pimpl->records.emplace_back(line);
     }
 }

@@ -7,8 +7,8 @@
 #include <stdexcept>
 
 /**
- * @brief C++11 compatible backport of C++20's std::format. Formats \c args
- * according to the format string \c format and returns the result as a string.
+ * @brief Formats \c args according to the printf-style format string \c format
+ * and returns the result as a string.
  *
  * Implementation based on https://stackoverflow.com/a/26221725.
  *

@@ -1,14 +1,27 @@
 #ifndef OPENCONSULT_LIB_LOG_REPLAY
 #define OPENCONSULT_LIB_LOG_REPLAY
 
+#include <istream>
 #include <memory>
 #include "byte_interface.h"
 
+/**
+ * @brief \c ByteInterface that reads from a log file and replays communications
+ * described within it.
+ */
 class LogReplay : public ByteInterface
 {
 public:
-    LogReplay(const std::string& log_path);
+    /**
+     * @brief Construct a new \c LogReplay .
+     *
+     * @param input_stream Stream to read the log from.
+     */
+    LogReplay(std::istream& input_stream);
 
+    /**
+     * @brief Destroy the \c LogReplay , closing the input stream.
+     */
     virtual ~LogReplay();
 
     /**

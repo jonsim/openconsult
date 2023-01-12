@@ -13,7 +13,8 @@ std::string last_error() {
    return std::system_category().message(error);
 }
 
-SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
+SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
+        : pimpl(new impl) {
     // Open the port.
     HANDLE handle = CreateFileA(static_cast<LPCSTR>(device.c_str()),
             GENERIC_READ | GENERIC_WRITE,
@@ -48,11 +49,11 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
     PurgeComm(handle, PURGE_RXCLEAR | PURGE_TXCLEAR);
 
     // Assign to the impl.
-    impl->port_handle = handle;
+    pimpl->port_handle = handle;
 }
 
 SerialPort::~SerialPort() {
-    CloseHandle(impl->port_handle);
+    CloseHandle(pimpl->port_handle);
 }
 
 std::vector<uint8_t> SerialPort::read(std::size_t size) {
@@ -60,7 +61,7 @@ std::vector<uint8_t> SerialPort::read(std::size_t size) {
     std::size_t total_bytes_read = 0;
     while (total_bytes_read < size) {
         std::size_t bytes_read = 0;
-        bool success = ReadFile(impl->port_handle,
+        bool success = ReadFile(pimpl->port_handle,
                 buff.data() + total_bytes_read,
                 size - total_bytes_read,
                 &bytes_read, NULL);
@@ -77,7 +78,7 @@ void SerialPort::write(std::vector<uint8_t> bytes) {
     std::size_t total_bytes_written = 0;
     while (total_bytes_written < bytes.size()) {
         std::size_t bytes_written = 0;
-        bool success = WriteFile(impl->port_handle,
+        bool success = WriteFile(pimpl->port_handle,
                 bytes.data() + total_bytes_written,
                 bytes.size() - total_bytes_written,
                 &bytes_written, NULL);

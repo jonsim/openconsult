@@ -47,7 +47,8 @@ speed_t baudRateToSpeed(uint32_t baud_rate) {
     };
 }
 
-SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
+SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
+        : pimpl(new impl) {
     // Open the port.
     int fd = open(device.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
@@ -85,19 +86,19 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate) {
         throw os_error(error);
     }
 
-    // Assign to the impl.
-    impl->port_fd = fd;
+    // Assign to the pimpl.
+    pimpl->port_fd = fd;
 }
 
 SerialPort::~SerialPort() {
-    close(impl->port_fd);
+    close(pimpl->port_fd);
 }
 
 std::vector<uint8_t> SerialPort::read(std::size_t size) {
     std::vector<uint8_t> buff(size);
     std::size_t total_bytes_read = 0;
     while (total_bytes_read < size) {
-        int bytes_read = ::read(impl->port_fd,
+        int bytes_read = ::read(pimpl->port_fd,
                 buff.data() + total_bytes_read,
                 size - total_bytes_read);
         if (bytes_read < 0) {
@@ -112,7 +113,7 @@ std::vector<uint8_t> SerialPort::read(std::size_t size) {
 void SerialPort::write(std::vector<uint8_t> bytes) {
     std::size_t total_bytes_written = 0;
     while (total_bytes_written < bytes.size()) {
-        ssize_t bytes_written = ::write(impl->port_fd,
+        ssize_t bytes_written = ::write(pimpl->port_fd,
                 bytes.data() + total_bytes_written,
                 bytes.size() - total_bytes_written);
         if (bytes_written < 0) {
