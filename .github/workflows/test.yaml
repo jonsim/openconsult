@@ -1,10 +1,10 @@
-name: deploy 
+name: test 
 on: 
   push:
     branches:
      - main
 jobs:
-  test-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
