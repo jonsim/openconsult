@@ -1,4 +1,6 @@
 # OpenConsult
+[![test](https://github.com/jonsim/openconsult/actions/workflows/test.yaml/badge.svg)](https://github.com/jonsim/openconsult/actions/workflows/test.yaml)
+
 An open-source, cross-platform C++ library for reading vehicle ECU diagnostic and performance data via the Consult protocol - a pre-cursor to standardized OBD protocols, used by Nissan from the late 1980s to the early 2000s.
 
 After finding no cross-platform tooling to read my ECU, and few high-quality open-source implementations, I felt it would be beneficial for the community to develop something.
