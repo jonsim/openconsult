@@ -45,6 +45,7 @@ cc_library(
     hdrs = ["serial.h"],
     srcs = ["serial.posix.cpp"],
     deps = [
+        "byte_interface",
         "common",
     ],
     visibility = ["//openconsult/test:__pkg__"],
