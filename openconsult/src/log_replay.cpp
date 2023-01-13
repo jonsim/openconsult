@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <istream>
 #include <stdexcept>
 #include <stdlib.h>
@@ -11,6 +12,8 @@ enum class LogRecordType {
 };
 
 struct LogRecord {
+    using data_type = std::vector<uint8_t>;
+
     LogRecord(const std::string& line) {
         // Sanity check the provided line before we go any further. The line
         // must contain: the record type (1 character), a space separator (1
@@ -50,67 +53,137 @@ struct LogRecord {
     }
 
     LogRecordType type;
-    std::vector<uint8_t> data;
+    data_type data;
+};
+
+class LogRecordsIterator : public std::iterator<std::forward_iterator_tag, uint8_t> {
+public:
+    using LogRecords = std::vector<LogRecord>;
+private:
+    using records_iter_t = LogRecords::iterator;
+    using record_iter_t = LogRecord::data_type::iterator;
+
+public:
+    static LogRecordsIterator begin(LogRecords& records, LogRecordType type) {
+        return LogRecordsIterator(type, records.begin(), records.end());
+    }
+
+    static LogRecordsIterator end(LogRecords& records, LogRecordType type) {
+        return LogRecordsIterator(type, records.end(), records.end());
+    }
+
+private:
+    LogRecordsIterator(LogRecordType type, records_iter_t begin, records_iter_t end)
+            : record_type(type), records_cursor(begin), records_bound(end) {
+        assignRecordCursor();
+    }
+
+    void assignRecordCursor() {
+        while (records_cursor != records_bound && records_cursor->type != record_type) {
+            records_cursor++;
+        }
+        if (records_cursor != records_bound) {
+            record_cursor = records_cursor->data.begin();
+            record_bound = records_cursor->data.end();
+        }
+    }
+
+    LogRecordType record_type;
+    records_iter_t records_cursor;
+    records_iter_t records_bound;
+    record_iter_t record_cursor;
+    record_iter_t record_bound;
+
+public:
+    LogRecordsIterator() = default;
+    LogRecordsIterator(const LogRecordsIterator&) = default;
+    LogRecordsIterator(LogRecordsIterator&&) = default;
+    LogRecordsIterator& operator=(const LogRecordsIterator&) = default;
+    LogRecordsIterator& operator=(LogRecordsIterator&&) = default;
+
+    // ++prefix operator
+    LogRecordsIterator& operator++() {
+        if (record_cursor != record_bound) {
+            record_cursor++;
+        } else {
+            records_cursor++;
+            assignRecordCursor();
+        }
+        return *this;
+    }
+
+    // postfix++ operator
+    LogRecordsIterator operator++(int) {
+        LogRecordsIterator prev = *this;
+        ++(*this);
+        return prev;
+    }
+
+    bool operator==(const LogRecordsIterator& other) const {
+        return record_type    == other.record_type &&
+               records_cursor == other.records_cursor &&
+               records_bound  == other.records_bound &&
+             ((records_cursor == records_bound) ||
+              (record_cursor  == other.record_cursor &&
+               record_bound   == other.record_bound));
+    }
+
+    bool operator!=(const LogRecordsIterator &other) const {
+        return !(*this == other);
+    }
+
+    const uint8_t& operator*() const {
+        return *record_cursor;
+    }
+
+    uint8_t& operator*() {
+        return *record_cursor;
+    }
+
+    const uint8_t& operator->() const {
+        return *record_cursor;
+    }
+
+    uint8_t& operator->() {
+        return *record_cursor;
+    }
 };
 
 struct LogReplay::impl {
-    void advanceReadCursor();
-    void advanceWriteCursor();
+    impl(std::istream& log_stream);
 
     std::vector<uint8_t> read(std::size_t size);
 
     using LogRecords = std::vector<LogRecord>;
-    using LogRecordsCursor = LogRecords::const_iterator;
-    using LogRecordDataCursor = std::vector<uint8_t>::const_iterator;
     LogRecords records;
-    LogRecordsCursor read_cursor {records.end()};
-    LogRecordsCursor write_cursor {records.end()};
-    LogRecordDataCursor read_data_cursor;
-    LogRecordDataCursor write_data_cursor;
+    LogRecordsIterator read_cursor;
+    LogRecordsIterator read_bound;
+    LogRecordsIterator write_cursor;
+    LogRecordsIterator write_bound;
 };
 
-
-void LogReplay::impl::advanceReadCursor() {
-    if (read_cursor == records.end()) {
-        read_cursor = records.begin();
-    } else {
-        read_cursor++;
+LogReplay::impl::impl(std::istream& log_stream) {
+    for (std::string line; std::getline(log_stream, line);) {
+        records.emplace_back(line);
     }
-
-    for (; read_cursor != records.end() && read_cursor->type != LogRecordType::READ; read_cursor++) {}
-    read_data_cursor = read_cursor->data.begin();
+    read_cursor  = LogRecordsIterator::begin(records, LogRecordType::READ);
+    read_bound   = LogRecordsIterator::end(  records, LogRecordType::READ);
+    write_cursor = LogRecordsIterator::begin(records, LogRecordType::WRITE);
+    write_bound  = LogRecordsIterator::end(  records, LogRecordType::WRITE);
 }
 
-void LogReplay::impl::advanceWriteCursor() {
-    if (write_cursor == records.end()) {
-        write_cursor = records.begin();
-    } else {
-        write_cursor++;
-    }
-
-    for (; write_cursor != records.end() && write_cursor->type != LogRecordType::WRITE; write_cursor++) {}
-    write_data_cursor = write_cursor->data.begin();
-}
 
 std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
-    LogRecordDataCursor start_cursor = read_data_cursor;
-    std::size_t remaining = advance(read_data_cursor, size, read_cursor->data.end());
-    std::vector<uint8_t> bytes {start_cursor, read_data_cursor};
-
-    if (remaining) {
-        advanceReadCursor();
-        std::vector<uint8_t> additional = read(remaining);
-        bytes.insert(bytes.end(), additional.begin(), additional.end());
-    }
+    LogRecordsIterator start = read_cursor;
+    std::size_t remaining = advance(read_cursor, size, read_bound);
+    std::vector<uint8_t> bytes(start, read_cursor);
+    assert(remaining == 0);
     return bytes;
 }
 
 
 LogReplay::LogReplay(std::istream& log_stream)
-        : pimpl(new impl) {
-    for (std::string line; std::getline(log_stream, line);) {
-        pimpl->records.emplace_back(line);
-    }
+        : pimpl(new impl(log_stream)) {
 }
 
 LogReplay::~LogReplay() = default;
