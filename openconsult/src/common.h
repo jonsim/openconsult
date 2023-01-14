@@ -1,10 +1,13 @@
 #ifndef OPENCONSULT_LIB_COMMON
 #define OPENCONSULT_LIB_COMMON
 
+#include <iomanip>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 namespace cmn {
 
@@ -31,6 +34,26 @@ std::string pformat(const std::string& format, Args&&... args) {
     return std::string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside.
 }
 
+
+
+/**
+ * @brief Formats \c bytes into a string with the numeric values represented in
+ * zero-padded hex, with no separator between bytes.
+ *
+ * @param bytes Vector of bytes to format.
+ * @return Formatted string representing the bytes.
+ */
+std::string format_bytes(const std::vector<uint8_t>& bytes) {
+    std::ostringstream sstream;
+    sstream << std::hex << std::setfill('0');
+    for (const uint8_t& byte : bytes) {
+        sstream << std::setw(2) << static_cast<uint32_t>(byte);
+    }
+    return sstream.str();
+}
+
+
+
 /**
  * @brief C++11 compatible backport of C++20's std::advance. Increments a given
  * iterator \c n times, or until \c iter \c == \c bound , whichever comes first.
@@ -55,6 +78,8 @@ dist_t advance(It& iter, dist_t n, It bound) {
     }
     return n;
 }
+
+
 
 /**
  * @brief Class holding a range between two iterators.

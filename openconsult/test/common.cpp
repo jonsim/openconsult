@@ -3,6 +3,56 @@
 #include <gmock/gmock-matchers.h>
 #include "openconsult/src/common.h"
 
+
+
+TEST(PformatTest, args) {
+    std::string s = cmn::pformat("hello %s", "world");
+    EXPECT_EQ(s, std::string("hello world"));
+}
+
+
+
+TEST(FormatBytesTest, args) {
+    std::vector<uint8_t> bytes {{1u}, {2u}, {111u}};
+    EXPECT_EQ(cmn::format_bytes(bytes), std::string("01026f"));
+}
+
+
+
+TEST(AdvanceTest, within_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 6, s.end());
+    EXPECT_EQ(remaining, 0);
+    EXPECT_EQ(*iter, 'w');
+}
+
+TEST(AdvanceTest, exactly_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 11, s.end());
+    EXPECT_EQ(remaining, 0);
+    EXPECT_EQ(iter, s.end());
+}
+
+TEST(AdvanceTest, beyond_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 16, s.end());
+    EXPECT_EQ(remaining, 5);
+    EXPECT_EQ(iter, s.end());
+}
+
+TEST(AdvanceTest, empty_range) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 6, s.begin());
+    EXPECT_EQ(remaining, 6);
+    EXPECT_EQ(iter, s.begin());
+}
+
+
+
 TEST(RangeTest, ctor_begin_end) {
     std::string s("hello");
     cmn::range<std::string::iterator> range(s.begin(), s.end());
@@ -77,41 +127,4 @@ TEST(RangeTest, foreach_const) {
         ASSERT_EQ(c, stack.top());
         stack.pop();
     }
-}
-
-TEST(PformatTest, args) {
-    std::string s = cmn::pformat("hello %s", "world");
-    EXPECT_EQ(s, std::string("hello world"));
-}
-
-TEST(AdvanceTest, within_bound) {
-    std::string s("hello world");
-    auto iter = s.begin();
-    auto remaining = cmn::advance(iter, 6, s.end());
-    EXPECT_EQ(remaining, 0);
-    EXPECT_EQ(*iter, 'w');
-}
-
-TEST(AdvanceTest, exactly_bound) {
-    std::string s("hello world");
-    auto iter = s.begin();
-    auto remaining = cmn::advance(iter, 11, s.end());
-    EXPECT_EQ(remaining, 0);
-    EXPECT_EQ(iter, s.end());
-}
-
-TEST(AdvanceTest, beyond_bound) {
-    std::string s("hello world");
-    auto iter = s.begin();
-    auto remaining = cmn::advance(iter, 16, s.end());
-    EXPECT_EQ(remaining, 5);
-    EXPECT_EQ(iter, s.end());
-}
-
-TEST(AdvanceTest, empty_range) {
-    std::string s("hello world");
-    auto iter = s.begin();
-    auto remaining = cmn::advance(iter, 6, s.begin());
-    EXPECT_EQ(remaining, 6);
-    EXPECT_EQ(iter, s.begin());
 }
