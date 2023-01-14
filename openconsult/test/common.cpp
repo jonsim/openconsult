@@ -20,11 +20,11 @@ TEST(FormatBytesTest, args) {
 
 
 TEST(AdvanceTest, within_bound) {
-    std::string s("hello world");
+    const std::string s("hello world");
     auto iter = s.begin();
     auto remaining = cmn::advance(iter, 6, s.end());
     EXPECT_EQ(remaining, 0);
-    EXPECT_EQ(*iter, 'w');
+    EXPECT_EQ(*iter, s[6]);
 }
 
 TEST(AdvanceTest, exactly_bound) {
