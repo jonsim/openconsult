@@ -42,7 +42,7 @@ speed_t baudRateToSpeed(uint32_t baud_rate) {
         case 2000000: return B2000000;
         default:
 
-            std::string error = string_format("Unsupported baud rate %u", baud_rate);
+            std::string error = cmn::pformat("Unsupported baud rate %u", baud_rate);
             throw os_error(error);
     };
 }
@@ -52,14 +52,14 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
     // Open the port.
     int fd = open(device.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
-        std::string error = string_format("Failed to open %s: %s", device, strerror(errno));
+        std::string error = cmn::pformat("Failed to open %s: %s", device, strerror(errno));
         throw os_error(error);
     }
 
     // Configure the port.
     struct termios tty;
     if (tcgetattr(fd, &tty) != 0) {
-        std::string error = string_format("Failed to query device: %s", strerror(errno));
+        std::string error = cmn::pformat("Failed to query device: %s", strerror(errno));
         throw os_error(error);
     }
 
@@ -82,7 +82,7 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
     tty.c_cc[VTIME] = 0;                        // Disable read timeouts.
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
-        std::string error = string_format("Failed to configure device: %s", strerror(errno));
+        std::string error = cmn::pformat("Failed to configure device: %s", strerror(errno));
         throw os_error(error);
     }
 
@@ -102,7 +102,7 @@ std::vector<uint8_t> SerialPort::read(std::size_t size) {
                 buff.data() + total_bytes_read,
                 size - total_bytes_read);
         if (bytes_read < 0) {
-            std::string error = string_format("Failed to read from serial port: %s", strerror(errno));
+            std::string error = cmn::pformat("Failed to read from serial port: %s", strerror(errno));
             throw os_error(error);
         }
         total_bytes_read += static_cast<std::size_t>(bytes_read);
@@ -117,7 +117,7 @@ void SerialPort::write(std::vector<uint8_t> bytes) {
                 bytes.data() + total_bytes_written,
                 bytes.size() - total_bytes_written);
         if (bytes_written < 0) {
-            std::string error = string_format("Failed to write to serial port: %s", strerror(errno));
+            std::string error = cmn::pformat("Failed to write to serial port: %s", strerror(errno));
             throw os_error(error);
         }
         total_bytes_written += static_cast<std::size_t>(bytes_written);

@@ -24,14 +24,14 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
             FILE_ATTRIBUTE_NORMAL,      // No special file type.
             NULL);                      // No template file.
 	if (handle == INVALID_HANDLE_VALUE) {
-        std::string error = string_format("Failed to open %s: %s", device, last_error());
+        std::string error = cmn::pformat("Failed to open %s: %s", device, last_error());
         throw os_error(error);
 	}
 
     // Configure the port.
     DCB params = {0};
     if (!GetCommState(handle, &params)) {
-        std::string error = string_format("Failed to query device: %s", last_error());
+        std::string error = cmn::pformat("Failed to query device: %s", last_error());
         throw os_error(error);
     }
 
@@ -43,7 +43,7 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
     params.fDtrControl = DTR_CONTROL_ENABLE;    // Enable DTR flow control.
 
     if (!SetCommState(handle, &params))
-        std::string error = string_format("Failed to configure device: %s", last_error());
+        std::string error = cmn::pformat("Failed to configure device: %s", last_error());
         throw os_error(error);
     }
     PurgeComm(handle, PURGE_RXCLEAR | PURGE_TXCLEAR);
@@ -66,7 +66,7 @@ std::vector<uint8_t> SerialPort::read(std::size_t size) {
                 size - total_bytes_read,
                 &bytes_read, NULL);
         if (!success) {
-            std::string error = string_format("Failed to read from serial port: %s", last_error());
+            std::string error = cmn::pformat("Failed to read from serial port: %s", last_error());
             throw os_error(error);
         }
         total_bytes_read += bytes_read;
@@ -83,7 +83,7 @@ void SerialPort::write(std::vector<uint8_t> bytes) {
                 bytes.size() - total_bytes_written,
                 &bytes_written, NULL);
         if (!success) {
-            std::string error = string_format("Failed to write to serial port: %s", last_error());
+            std::string error = cmn::pformat("Failed to write to serial port: %s", last_error());
             throw os_error(error);
         }
         total_bytes_written += bytes_written;

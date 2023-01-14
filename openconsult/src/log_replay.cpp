@@ -21,7 +21,7 @@ struct LogRecord {
         // since the data is encoded to take 2 characters per byte, the line
         // must have an even length.
         if (line.length() < 4 || line.length() % 2) {
-            std::string error = string_format("Failed to parse line: %s", line.c_str());
+            std::string error = cmn::pformat("Failed to parse line: %s", line.c_str());
             throw std::invalid_argument(error);
         }
 
@@ -30,13 +30,13 @@ struct LogRecord {
             case 'R': type = LogRecordType::READ; break;
             case 'W': type = LogRecordType::WRITE; break;
             default:
-                std::string error = string_format("Failed to parse line: %s", line.c_str());
+                std::string error = cmn::pformat("Failed to parse line: %s", line.c_str());
                 throw std::invalid_argument(error);
         }
 
         // Ensure separator is present.
         if (line[1] != ' ') {
-            std::string error = string_format("Failed to parse line: %s", line.c_str());
+            std::string error = cmn::pformat("Failed to parse line: %s", line.c_str());
             throw std::invalid_argument(error);
         }
 
@@ -175,7 +175,7 @@ LogReplay::impl::impl(std::istream& log_stream) {
 
 std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
     LogRecordsIterator start = read_cursor;
-    std::size_t remaining = advance(read_cursor, size, read_bound);
+    std::size_t remaining = cmn::advance(read_cursor, size, read_bound);
     std::vector<uint8_t> bytes(start, read_cursor);
     assert(remaining == 0);
     return bytes;

@@ -1,0 +1,80 @@
+#include <stack>
+#include <gtest/gtest.h>
+#include <gmock/gmock-matchers.h>
+#include "openconsult/src/common.h"
+
+TEST(RangeTest, ctor_begin_end) {
+    std::string s("hello");
+    cmn::range<std::string::iterator> range(s.begin(), s.end());
+}
+
+TEST(RangeTest, ctor_begin_end_const) {
+    const std::string s("hello");
+    cmn::range<std::string::const_iterator> range(s.begin(), s.end());
+}
+
+TEST(RangeTest, ctor_container) {
+    std::string s("hello");
+    cmn::range<std::string::iterator> range(s);
+}
+
+TEST(RangeTest, ctor_container_const) {
+    const std::string s("hello");
+    cmn::range<std::string::const_iterator> range(s);
+}
+
+TEST(RangeTest, make_range_begin_end) {
+    std::string s("hello");
+    cmn::make_range(s.begin(), s.end());
+}
+
+TEST(RangeTest, make_range_begin_end_const) {
+    const std::string s("hello");
+    cmn::make_range(s.begin(), s.end());
+}
+
+TEST(RangeTest, make_range_container) {
+    std::string s("hello");
+    cmn::make_range(s);
+}
+
+TEST(RangeTest, make_range_container_const) {
+    const std::string s("hello");
+    cmn::make_range(s);
+}
+
+TEST(RangeTest, compare) {
+    std::string s("hello");
+    auto range1 = cmn::make_range(s);
+    auto range2 = cmn::make_range(s.begin(), s.end());
+    auto range3 = cmn::make_range(s.begin(), ++s.begin());
+    auto range4 = cmn::make_range(++s.begin(), s.end());
+
+    EXPECT_TRUE(range1 == range2);
+    EXPECT_FALSE(range2 == range3);
+    EXPECT_FALSE(range2 == range4);
+
+    EXPECT_FALSE(range1 != range2);
+    EXPECT_TRUE(range2 != range3);
+    EXPECT_TRUE(range2 != range4);
+}
+
+TEST(RangeTest, foreach) {
+    std::string s("hello");
+    auto range = cmn::make_range(s);
+    std::stack<char> stack {{ 'o', 'l', 'l', 'e', 'h' }};
+    for (char c : range) {
+        ASSERT_EQ(c, stack.top());
+        stack.pop();
+    }
+}
+
+TEST(RangeTest, foreach_const) {
+    const std::string s("hello");
+    auto range = cmn::make_range(s);
+    std::stack<char> stack {{ 'o', 'l', 'l', 'e', 'h' }};
+    for (char c : range) {
+        ASSERT_EQ(c, stack.top());
+        stack.pop();
+    }
+}
