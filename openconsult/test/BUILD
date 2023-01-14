@@ -11,6 +11,18 @@ cc_test(
 )
 
 cc_test(
+    name = "log_recorder_test",
+    size = "small",
+    srcs = [
+        "log_recorder.cpp",
+    ],
+    deps = [
+        "@gtest//:gtest_main",
+        "//openconsult/src:log_recorder",
+    ],
+)
+
+cc_test(
     name = "log_replay_test",
     size = "small",
     srcs = [

@@ -41,6 +41,16 @@ cc_library(
 )
 
 cc_library(
+    name = "log_recorder",
+    hdrs = ["log_recorder.h"],
+    srcs = ["log_recorder.cpp"],
+    deps = [
+        "common",
+    ],
+    visibility = ["//openconsult/test:__pkg__"],
+)
+
+cc_library(
     name = "serial.posix",
     hdrs = ["serial.h"],
     srcs = ["serial.posix.cpp"],
