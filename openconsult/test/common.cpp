@@ -83,3 +83,35 @@ TEST(PformatTest, args) {
     std::string s = cmn::pformat("hello %s", "world");
     EXPECT_EQ(s, std::string("hello world"));
 }
+
+TEST(AdvanceTest, within_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 6, s.end());
+    EXPECT_EQ(remaining, 0);
+    EXPECT_EQ(*iter, 'w');
+}
+
+TEST(AdvanceTest, exactly_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 11, s.end());
+    EXPECT_EQ(remaining, 0);
+    EXPECT_EQ(iter, s.end());
+}
+
+TEST(AdvanceTest, beyond_bound) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 16, s.end());
+    EXPECT_EQ(remaining, 5);
+    EXPECT_EQ(iter, s.end());
+}
+
+TEST(AdvanceTest, empty_range) {
+    std::string s("hello world");
+    auto iter = s.begin();
+    auto remaining = cmn::advance(iter, 6, s.begin());
+    EXPECT_EQ(remaining, 6);
+    EXPECT_EQ(iter, s.begin());
+}
