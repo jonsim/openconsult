@@ -78,3 +78,8 @@ TEST(RangeTest, foreach_const) {
         stack.pop();
     }
 }
+
+TEST(PformatTest, args) {
+    std::string s = cmn::pformat("hello %s", "world");
+    EXPECT_EQ(s, std::string("hello world"));
+}
