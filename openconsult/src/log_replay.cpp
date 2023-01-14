@@ -155,7 +155,7 @@ private:
     LogRecordsIterator(LogRecordType type, records_iter_t begin, records_iter_t end, bool wrap)
             : record_type(type), records_cursor(begin)
             , records_begin(begin), records_end(end)
-            , should_wrap(wrap) {
+            , should_wrap(wrap), wrap_count(0) {
         resetRecordCursor(false);
     }
 
@@ -166,8 +166,8 @@ public:
         // Advance the record cursor.
         record_cursor++;
         if (record_cursor == record_end) {
-            // If that has caused it to now be at the end, advance the records
-            // cursor and reset the record cursor.
+            // If that has caused the record cursor to now be at the end,
+            // advance the records cursor and reset the record cursor.
             records_cursor++;
             resetRecordCursor(should_wrap);
         }
@@ -186,6 +186,8 @@ public:
         // undefined and must not be accessed. This only considers remaining
         // data in the iterator - the begin points are not compared.
         return record_type    == other.record_type &&
+               wrap_count     == other.wrap_count &&
+               should_wrap    == other.should_wrap &&
                records_cursor == other.records_cursor &&
                records_end    == other.records_end &&
              ((records_cursor == records_end) ||
@@ -270,6 +272,7 @@ private:
             // the start and then re-invoke this method (forcing wrap off to
             // prevent endlessly recursing if there are no valid records).
             records_cursor = records_begin;
+            wrap_count++;
             resetRecordCursor(false);
         }
     }
@@ -283,11 +286,12 @@ private:
     record_iter_t record_cursor;
     record_iter_t record_end;
     bool should_wrap;
+    std::size_t wrap_count;
 };
 
 
 struct LogReplay::impl {
-    impl(std::istream& log_stream);
+    impl(std::istream& log_stream, bool wrap);
 
     std::vector<uint8_t> read(std::size_t size);
     void write(const std::vector<uint8_t>& bytes);
@@ -300,14 +304,14 @@ struct LogReplay::impl {
 };
 
 
-LogReplay::impl::impl(std::istream& log_stream) {
+LogReplay::impl::impl(std::istream& log_stream, bool wrap) {
     for (std::string line; std::getline(log_stream, line);) {
         records.emplace_back(line);
     }
-    read_cursor  = LogRecordsIterator::begin(records, LogRecordType::READ);
-    read_bound   = LogRecordsIterator::end(  records, LogRecordType::READ);
-    write_cursor = LogRecordsIterator::begin(records, LogRecordType::WRITE);
-    write_bound  = LogRecordsIterator::end(  records, LogRecordType::WRITE);
+    read_cursor  = LogRecordsIterator::begin(records, LogRecordType::READ,  wrap);
+    read_bound   = LogRecordsIterator::end(  records, LogRecordType::READ,  wrap);
+    write_cursor = LogRecordsIterator::begin(records, LogRecordType::WRITE, wrap);
+    write_bound  = LogRecordsIterator::end(  records, LogRecordType::WRITE, wrap);
 }
 
 std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
@@ -316,6 +320,9 @@ std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
     if (remaining) {
         throw std::runtime_error("No more read log records to replay");
     }
+    // Slightly dumb pattern because we loop through the iterator twice. But
+    // without C++20 this is about as nice as we can get without sacrificing
+    // readability.
     return std::vector<uint8_t>(start, read_cursor);
 }
 
@@ -342,8 +349,8 @@ void LogReplay::impl::write(const std::vector<uint8_t>& bytes) {
 }
 
 
-LogReplay::LogReplay(std::istream& log_stream)
-        : pimpl(new impl(log_stream)) {
+LogReplay::LogReplay(std::istream& log_stream, bool wrap)
+        : pimpl(new impl(log_stream, wrap)) {
 }
 
 LogReplay::~LogReplay() = default;

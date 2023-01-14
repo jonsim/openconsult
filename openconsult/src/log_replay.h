@@ -16,8 +16,12 @@ public:
      * @brief Construct a new \c LogReplay .
      *
      * @param input_stream Stream to read the log from.
+     * @param wrap \c true to cause the replayed data to wrap when reaching the
+     *      end, \c false to raise \c std::runtime_error from the \c read(...)
+     *      and \c write(...) methods when attempting to interact with it after
+     *      their respective logged data has been depleted.
      */
-    LogReplay(std::istream& input_stream);
+    LogReplay(std::istream& input_stream, bool wrap = false);
 
     /**
      * @brief Destroy the \c LogReplay , closing the input stream.

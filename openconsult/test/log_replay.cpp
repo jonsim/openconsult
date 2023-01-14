@@ -307,3 +307,66 @@ TEST(LogReplayTest, write_resets_read_cursor_over_skipped_lines) {
         replay.read(1);
     }, std::runtime_error);
 }
+
+TEST(LogReplayTest, read_one_byte_wrapped) {
+    std::istringstream stream("R 01\n");
+    LogReplay replay(stream, true);
+
+    auto data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(1u));
+
+    data = replay.read(3);
+    EXPECT_THAT(data, ElementsAre(1u, 1u, 1u));
+}
+
+TEST(LogReplayTest, read_multiple_lines_wrapped) {
+    std::istringstream stream("R 01\nR 02");
+    LogReplay replay(stream, true);
+
+    auto data = replay.read(3);
+    EXPECT_THAT(data, ElementsAre(1u, 2u, 1u));
+
+    data = replay.read(3);
+    EXPECT_THAT(data, ElementsAre(2u, 1u, 2u));
+}
+
+TEST(LogReplayTest, read_write_wrapped) {
+    std::istringstream stream("W 01\nR 01\nW 02\nR 02");
+    LogReplay replay(stream, true);
+
+    std::vector<uint8_t> bytes1 {{1u}};
+    std::vector<uint8_t> bytes2 {{2u}};
+
+    replay.write(bytes1);
+    auto data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(1u));
+
+    replay.write(bytes1);
+    data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(1u));
+
+    replay.write(bytes2);
+    data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(2u));
+
+    replay.write(bytes2);
+    data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(2u));
+}
+
+TEST(LogReplayTest, write_wrapped_sequence) {
+    std::istringstream stream("R 01\nW 02\nR 0304\nW 05");
+    LogReplay replay(stream, true);
+
+    std::vector<uint8_t> bytes1 {{2u, 5u}};
+    replay.write(bytes1);
+
+    auto data = replay.read(1);
+    EXPECT_THAT(data, ElementsAre(1u));
+
+    std::vector<uint8_t> bytes2 {{5u, 2u}};
+    replay.write(bytes2);
+
+    data = replay.read(2);
+    EXPECT_THAT(data, ElementsAre(3u, 4u));
+}
