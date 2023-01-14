@@ -320,13 +320,25 @@ std::vector<uint8_t> LogReplay::impl::read(std::size_t size) {
 }
 
 void LogReplay::impl::write(const std::vector<uint8_t>& bytes) {
+    // Advance the write cursor to the next position that contains a write of
+    // the given byte sequence.
     write_cursor = std::search(write_cursor, write_bound, bytes.begin(), bytes.end());
-    LogRecordsIterator start = write_cursor;
-    std::size_t remaining = cmn::advance(write_cursor, bytes.size(), write_bound);
+
+    // Advance the write cursor, then advance the read cursor to it.
+    // The read cursor needs to be set to the position the final byte was
+    // written to. The final byte written may have caused the write cursor to
+    // advance a record, skipping over any read records that immediately follow
+    // the write record (and which we want to replay).
+    std::size_t remaining = 0;
+    if (bytes.size() > 0) {
+        remaining += cmn::advance(write_cursor, bytes.size() - 1, write_bound);
+    }
+    read_cursor.advanceTo(write_cursor);
+    remaining += cmn::advance(write_cursor, 1, write_bound);
+
     if (remaining) {
         throw std::runtime_error("No more write log records to replay");
     }
-    read_cursor.advanceTo(start);
 }
 
 

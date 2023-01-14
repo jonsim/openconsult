@@ -45,6 +45,14 @@ TEST(LogReplayTest, read_one_byte) {
     EXPECT_THAT(data, ElementsAre(1u));
 }
 
+TEST(LogReplayTest, read_zero_bytes) {
+    std::istringstream stream("R 01\n");
+    LogReplay replay(stream);
+
+    auto data = replay.read(0);
+    EXPECT_THAT(data, ElementsAre());
+}
+
 TEST(LogReplayTest, read_one_byte_without_newline) {
     std::istringstream stream("R 01");
     LogReplay replay(stream);
@@ -121,11 +129,19 @@ TEST(LogReplayTest, read_no_valid_lines) {
     }, std::runtime_error);
 }
 
-TEST(LogReplayTest, write_single_byte) {
+TEST(LogReplayTest, write_one_byte) {
     std::istringstream stream("W 01\n");
     LogReplay replay(stream);
 
     std::vector<uint8_t> bytes {{1u}};
+    replay.write(bytes);
+}
+
+TEST(LogReplayTest, write_zero_bytes) {
+    std::istringstream stream("W 01\n");
+    LogReplay replay(stream);
+
+    std::vector<uint8_t> bytes;
     replay.write(bytes);
 }
 
@@ -265,6 +281,24 @@ TEST(LogReplayTest, write_resets_read_cursor_to_next) {
 
     auto data2 = replay.read(2);
     EXPECT_THAT(data2, ElementsAre(5u, 6u));
+
+    EXPECT_THROW({
+        replay.write(bytes1);
+    }, std::runtime_error);
+    EXPECT_THROW({
+        replay.read(1);
+    }, std::runtime_error);
+}
+
+TEST(LogReplayTest, write_resets_read_cursor_over_skipped_lines) {
+    std::istringstream stream("R 0102\nW 03\nR 0506\nW 04\nR 0708");
+    LogReplay replay(stream);
+
+    std::vector<uint8_t> bytes1 {{3u, 4u}};
+    replay.write(bytes1);
+
+    auto data1 = replay.read(2);
+    EXPECT_THAT(data1, ElementsAre(7u, 8u));
 
     EXPECT_THROW({
         replay.write(bytes1);
