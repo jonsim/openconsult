@@ -74,7 +74,7 @@ std::vector<uint8_t> SerialPort::read(std::size_t size) {
     return buff;
 }
 
-void SerialPort::write(std::vector<uint8_t> bytes) {
+void SerialPort::write(const std::vector<uint8_t>& bytes) {
     std::size_t total_bytes_written = 0;
     while (total_bytes_written < bytes.size()) {
         std::size_t bytes_written = 0;

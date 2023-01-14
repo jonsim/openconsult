@@ -26,7 +26,7 @@ public:
      *
      * @param bytes Vector containing zero or more bytes to write.
      */
-    virtual void write(std::vector<uint8_t> bytes) = 0;
+    virtual void write(const std::vector<uint8_t>& bytes) = 0;
 };
 
 #endif

@@ -32,7 +32,7 @@ public:
     /**
      * @copydoc ByteInterface::write(std::vector<uint8_t>)
      */
-    virtual void write(std::vector<uint8_t> bytes) override;
+    virtual void write(const std::vector<uint8_t>& bytes) override;
 
 private:
     class impl;

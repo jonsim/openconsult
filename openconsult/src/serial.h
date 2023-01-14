@@ -63,7 +63,7 @@ public:
      *
      * @throws os_error is the write fails unexpectedly.
      */
-    virtual void write(std::vector<uint8_t> bytes) override;
+    virtual void write(const std::vector<uint8_t>& bytes) override;
 
 private:
     struct impl;

@@ -192,6 +192,5 @@ std::vector<uint8_t> LogReplay::read(std::size_t size) {
     return pimpl->read(size);
 }
 
-void LogReplay::write(std::vector<uint8_t> bytes) {
-
+void LogReplay::write(const std::vector<uint8_t>& bytes) {
 }
