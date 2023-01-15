@@ -9,6 +9,16 @@ cc_test(
 )
 
 cc_test(
+    name = "consult_engine_parameters",
+    size = "small",
+    srcs = ["consult_engine_parameters.cpp"],
+    deps = [
+        "@gtest//:gtest_main",
+        "//openconsult/src:consult_engine_parameters",
+    ],
+)
+
+cc_test(
     name = "consult_fault_codes",
     size = "small",
     srcs = ["consult_fault_codes.cpp"],
