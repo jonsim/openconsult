@@ -77,6 +77,17 @@ TEST(ConsultEngineParametersTest, engineParameterDecode_parameter_invalid) {
 }
 
 
+TEST(ConsultEngineParametersTest, engineParameterId) {
+    EXPECT_EQ(engineParameterId(EngineParameter::ENGINE_RPM),
+              "engine_speed_rpm");
+    EXPECT_EQ(engineParameterId(EngineParameter::BATTERY_VOLTAGE),
+              "battery_v");
+    EXPECT_THROW({
+        engineParameterId(static_cast<EngineParameter>(0xffu));
+    }, std::invalid_argument);
+}
+
+
 TEST(ConsultEngineParametersTest, engineParameterName) {
     EXPECT_EQ(engineParameterName(EngineParameter::ENGINE_RPM),
               "Engine speed (RPM)");

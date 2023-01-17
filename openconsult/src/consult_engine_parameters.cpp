@@ -3,6 +3,10 @@
 #include "common.h"
 #include "consult_engine_parameters.h"
 
+/**
+ * @brief Internal enum containing the Consult register identifiers. The
+ * pseudo-parameters we publicly expose are built from these.
+ */
 enum class RegisterIds : uint8_t {
     CRANKSHAFT_RPM_MSB              = 0x00,
     CRANKSHAFT_RPM_LSB              = 0x01,
@@ -145,6 +149,7 @@ std::vector<uint8_t> engineParameterCommand(EngineParameter parameter) {
     }
 }
 
+
 void arg_assert(bool assertion) {
     if (!assertion) {
         throw std::invalid_argument("Invalid data length for engine parameter.");
@@ -226,6 +231,80 @@ double engineParameterDecode(EngineParameter parameter, const std::vector<uint8_
             throw std::invalid_argument(error);
     };
 }
+
+
+std::string engineParameterId(EngineParameter parameter) {
+    switch (parameter) {
+        case EngineParameter::ENGINE_RPM:
+            return "engine_speed_rpm";
+        case EngineParameter::LH_MAF_VOLTAGE:
+            return "maf_sensor_v";
+        case EngineParameter::RH_MAF_VOLTAGE:
+            return "maf_sensor_rh_v";
+        case EngineParameter::COOLANT_TEMPERATURE:
+            return "coolant_temp_degc";
+        case EngineParameter::LH_O2_SENSOR_VOLTAGE:
+            return "o2_sensor_v";
+        case EngineParameter::RH_O2_SENSOR_VOLTAGE:
+            return "o2_sensor_rh_v";
+        case EngineParameter::VEHICLE_SPEED:
+            return "vehicle_speed_kmph";
+        case EngineParameter::BATTERY_VOLTAGE:
+            return "battery_v";
+        case EngineParameter::THROTTLE_POSITION:
+            return "throttle_position_sensor_v";
+        case EngineParameter::FUEL_TEMPERATURE:
+            return "fuel_temp_degc";
+        case EngineParameter::INTAKE_AIR_TEMPERATURE:
+            return "intake_temp_degc";
+        case EngineParameter::EXHAUST_GAS_TEMPERATURE:
+            return "exhaust_temp_v";
+        case EngineParameter::LH_INJECTION_TIMING:
+            return "injection_timing_s";
+        case EngineParameter::RH_INJECTION_TIMING:
+            return "injection_timing_rh_s";
+        case EngineParameter::IGNITION_TIMING:
+            return "ignition_timing_degbtdc";
+        case EngineParameter::AAC_VALVE:
+            return "aac_valve_pcnt";
+        case EngineParameter::LH_AIR_FUEL_ALPHA:
+            return "air_fuel_alpha_pcnt";
+        case EngineParameter::RH_AIR_FUEL_ALPHA:
+            return "air_fuel_alpha_rh_pcnt";
+        case EngineParameter::LH_AIR_FUEL_ALPHA_SELF_LEARN:
+            return "air_fuel_alpha_feedback_pcnt";
+        case EngineParameter::RH_AIR_FUEL_ALPHA_SELF_LEARN:
+            return "air_fuel_alpha_feedback_rh_pcnt";
+        case EngineParameter::MR_FC_MNT:
+            return "air_fuel_mixture_status";
+        case EngineParameter::WASTE_GATE_SOLENOID:
+            return "waste_gate_valve_pcnt";
+        case EngineParameter::TURBO_BOOST_SENSOR:
+            return "turbo_boost_sensor_v";
+        case EngineParameter::ENGINE_MOUNT:
+            return "engine_mount_status";
+        case EngineParameter::POSITION_COUNTER:
+            return "position_counter_count";
+        case EngineParameter::PURGE_CONTROL_VALVE:
+            return "purge_control_valve_pcnt";
+        case EngineParameter::TANK_FUEL_TEMPERATURE:
+            return "fuel_tank_temp_degc";
+        case EngineParameter::FPCM_DR_VOLTAGE:
+            return "fuel_pump_control_v";
+        case EngineParameter::FUEL_GAUGE_VOLTAGE:
+            return "fuel_gauge_v";
+        case EngineParameter::DIGITAL_BIT_REGISTER1:
+            return "digital_bit_register1";
+        case EngineParameter::DIGITAL_BIT_REGISTER2:
+            return "digital_bit_register2";
+        case EngineParameter::DIGITAL_BIT_REGISTER3:
+            return "digital_bit_register3";
+        default:
+            std::string error = cmn::pformat("Unknown engine parameter: %02x", parameter);
+            throw std::invalid_argument(error);
+    };
+}
+
 
 std::string engineParameterName(EngineParameter parameter) {
     switch (parameter) {

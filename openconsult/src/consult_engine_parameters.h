@@ -70,6 +70,19 @@ std::vector<uint8_t> engineParameterCommand(EngineParameter parameter);
 double engineParameterDecode(EngineParameter parameter, const std::vector<uint8_t>& data);
 
 /**
+ * @brief Retrieves a string identifier for an \c EngineParameter .
+ *
+ * This unique identifier is lower case alpha-numeric ASCII free of whitespace.
+ * It is suitable for use as a programmatic identifier, but is not necessarily
+ * meaningful when presented to a human.
+ *
+ * @param parameter The \c EngineParameter to look-up.
+ * @return The unique identifier for \c parameter .
+ * @throws std::invalid_argument if \c parameter is not valid.
+ */
+std::string engineParameterId(EngineParameter parameter);
+
+/**
  * @brief Retrieves a short name for an \c EngineParameter .
  *
  * This name is in English, may contain spaces but does not contain other

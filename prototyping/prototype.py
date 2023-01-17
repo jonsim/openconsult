@@ -411,7 +411,7 @@ def port_read_fault_codes(interface: ConsultInterface):
                 'code': code,
                 'name': name,
                 'description': desc,
-                'starts_since_fault': starts,
+                'starts_since_observed': starts,
             })
         return codes
 
@@ -429,9 +429,9 @@ def port_read_registers(interface: ConsultInterface):
         vehicle_speed_kph = frame[2] * 2
         battery_voltage_v = (frame[3] * 80) / 1000
         return {
-            'engine_rpm': engine_rpm,
-            'vehicle_speed_kph': vehicle_speed_kph,
-            'battery_voltage_v': battery_voltage_v,
+            'engine_speed_rpm': engine_rpm,
+            'vehicle_speed_kmph': vehicle_speed_kph,
+            'battery_v': battery_voltage_v,
         }
 
 def port_capability_scan(interface: ConsultInterface):
