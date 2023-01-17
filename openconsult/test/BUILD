@@ -29,6 +29,16 @@ cc_test(
 )
 
 cc_test(
+    name = "consult_interface",
+    size = "small",
+    srcs = ["consult_interface.cpp"],
+    deps = [
+        "@gtest//:gtest_main",
+        "//openconsult/src:consult_interface",
+    ],
+)
+
+cc_test(
     name = "log_recorder_test",
     size = "small",
     srcs = ["log_recorder.cpp"],

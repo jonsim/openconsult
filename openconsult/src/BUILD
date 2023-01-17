@@ -50,6 +50,19 @@ cc_library(
 )
 
 cc_library(
+    name = "consult_interface",
+    hdrs = ["consult_interface.h"],
+    srcs = ["consult_interface.cpp"],
+    deps = [
+        "byte_interface",
+        "common",
+        "consult_engine_parameters",
+        "consult_fault_codes",
+    ],
+    visibility = ["//openconsult/test:__pkg__"],
+)
+
+cc_library(
     name = "log_replay",
     hdrs = ["log_replay.h"],
     srcs = ["log_replay.cpp"],
