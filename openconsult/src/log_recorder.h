@@ -1,6 +1,8 @@
 #ifndef OPENCONSULT_LIB_LOG_RECORDER
 #define OPENCONSULT_LIB_LOG_RECORDER
 
+#include "byte_interface.h"
+
 #include <ostream>
 #include <memory>
 #include <vector>
@@ -9,38 +11,44 @@ namespace openconsult {
 
 
 /**
- * @brief Class that records read and write transactions to a log. The generated
- *      log may be subsequently passed to a \c LogReplay to replay the
- *      transactions. Logs may be concatenated.
+ * @brief \c ByteInterface that shims another \c ByteInterface , logging all
+ *      transactions invoked on it before forwarding the response.
+ *
+ * The generated log may be subsequently passed to a \c LogReplay to replay the
+ * transactions. Logs may be concatenated.
  */
-class LogRecorder
-{
+class LogRecorder : public ByteInterface {
 public:
     /**
      * @brief Construct a new \c LogRecorder .
      *
+     * @param snooped Interface whose transactions are to be logged.
      * @param output_stream Stream to write the log to.
      */
-    LogRecorder(std::ostream& output_stream);
+    LogRecorder(std::unique_ptr<ByteInterface> snooped, std::ostream& output_stream);
+
+    // LogRecorder is not copyable.
+    LogRecorder(const LogRecorder&) = delete;
+    LogRecorder& operator=(const LogRecorder&) = delete;
+    // LogRecorder is movable.
+    LogRecorder(LogRecorder&&);
+    LogRecorder& operator=(LogRecorder&&);
 
     /**
-     * @brief Destroy the \c LogRecorder , closing the output stream.
+     * @brief Destroy the \c LogRecorder , closing the output stream and
+     *      releasing the underlying snooped interface.
      */
     ~LogRecorder();
 
     /**
-     * @brief Records a read transaction to the log.
-     *
-     * @param bytes Transaction to record.
+     * @copydoc ByteInterface::read(std::size_t)
      */
-    void read(const std::vector<uint8_t>& bytes);
+    virtual std::vector<uint8_t> read(std::size_t size = 0) override;
 
     /**
-     * @brief Records a write transaction to the log.
-     *
-     * @param bytes Transaction to record.
+     * @copydoc ByteInterface::write(std::vector<uint8_t>)
      */
-    void write(const std::vector<uint8_t>& bytes);
+    virtual void write(const std::vector<uint8_t>& bytes) override;
 
 private:
     class impl;

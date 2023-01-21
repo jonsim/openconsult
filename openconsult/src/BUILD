@@ -72,6 +72,7 @@ cc_library(
     hdrs = ["log_recorder.h"],
     srcs = ["log_recorder.cpp"],
     deps = [
+        "byte_interface",
         "common",
     ],
     visibility = ["//openconsult/test:__pkg__"],
