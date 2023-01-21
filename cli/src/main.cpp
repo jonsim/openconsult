@@ -20,7 +20,7 @@ using namespace openconsult;
 #define APP_DESCRIPTION "Command line utility for reading from a Consult device."
 // Keep USAGE to < 100 characters per line, including the newline.
 #define APP_USAGE "usage: " APP_NAME " [--help] [--version] [--log path] [--replay]\n"\
-              "           [--replay_wrap] device"
+              "           [--replay_wrap] [--print_ecu] [--print_faults] device"
 
 ABSL_FLAG(std::string, log, "",
           "Path to log all Consult transactions to. This log may be subsequently "
@@ -29,6 +29,10 @@ ABSL_FLAG(bool, replay, false,
           "Interpret the passed device as a log to replay transactions from.");
 ABSL_FLAG(bool, replay_wrap, false,
           "When replaying a log, wrap at the end of the log.");
+ABSL_FLAG(bool, print_ecu, false,
+          "Print metadata about the ECU.");
+ABSL_FLAG(bool, print_faults, false,
+          "Print any recently observed fault codes.");
 
 void reportUsageError(std::string error) {
     std::cerr << APP_USAGE << "\n";
@@ -45,6 +49,12 @@ int main(int argc, char** argv) {
 
     // Parse command line.
     auto positional_args = absl::ParseCommandLine(argc, argv);
+    bool replay = absl::GetFlag(FLAGS_replay);
+    bool wrap = absl::GetFlag(FLAGS_replay_wrap);
+    std::string log_path = absl::GetFlag(FLAGS_log);
+    bool print_ecu = absl::GetFlag(FLAGS_print_ecu);
+    bool print_faults = absl::GetFlag(FLAGS_print_faults);
+
     // Validate command line.
     if (positional_args.size() < 2) {
         reportUsageError("The following arguments are required: device");
@@ -53,22 +63,18 @@ int main(int argc, char** argv) {
     }
 
     std::string device_id = positional_args[1];
-    std::cout << device_id << "\n";
-    bool replay = absl::GetFlag(FLAGS_replay);
 
     // Construct the device to perform Consult transactions with.
     std::unique_ptr<ByteInterface> device;
     std::ifstream replay_file;
     std::ofstream log_file;
     if (replay) {
-        bool wrap = absl::GetFlag(FLAGS_replay_wrap);
         replay_file = std::ifstream(device_id, std::ios_base::in);
         if (!replay_file.good()) {
             reportUsageError(cmn::pformat("Failed to open %s", device_id.c_str()));
         }
         device = std::unique_ptr<ByteInterface>(new LogReplay(replay_file, wrap));
     } else {
-        std::string log_path = absl::GetFlag(FLAGS_log);
         device = std::unique_ptr<ByteInterface>(new SerialPort(device_id, 9600));
         if (!log_path.empty()) {
             log_file = std::ofstream(log_path, std::ios_base::out);
@@ -81,6 +87,23 @@ int main(int argc, char** argv) {
 
     // Construct the ConsultInterface.
     ConsultInterface consult(std::move(device));
+
+    if (print_ecu) {
+        auto metadata = consult.readECUMetadata();
+        std::cout << "\n";
+        std::cout << "ECU METADATA\n";
+        std::cout << "============\n";
+        std::cout << metadata.toJSON();
+        std::cout << "\n";
+    }
+    if (print_faults) {
+        auto faults = consult.readFaultCodes();
+        std::cout << "\n";
+        std::cout << "FAULT CODES\n";
+        std::cout << "===========\n";
+        std::cout << faults.toJSON();
+        std::cout << "\n";
+    }
 
     return 0;
 }
