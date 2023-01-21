@@ -6,9 +6,9 @@ using ::testing::ElementsAre;
 
 TEST(ConsultEngineParametersTest, engineParameterCommand) {
     EXPECT_THAT(engineParameterCommand(EngineParameter::ENGINE_RPM),
-                ElementsAre(0x00, 0x01));
+                ElementsAre(0x5A, 0x00, 0x5A, 0x01));
     EXPECT_THAT(engineParameterCommand(EngineParameter::BATTERY_VOLTAGE),
-                ElementsAre(0x0c));
+                ElementsAre(0x5A, 0x0C));
     EXPECT_THROW({
         engineParameterCommand(static_cast<EngineParameter>(0xffu));
     }, std::invalid_argument);

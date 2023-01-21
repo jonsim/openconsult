@@ -101,11 +101,108 @@ struct EngineParameters : public ConsultResponse {
     std::map<EngineParameter, double> parameters;
 };
 
-
 /**
  * @brief A stream of responses describing the live value of one or more engine
  *      parameters. Each frame contains the same engine parameters.
  */
 using EngineParametersStream = ConsultResponseStream<EngineParameters>;
+
+
+/**
+ * @brief RAII class for communicating with a Consult device.
+ */
+class ConsultInterface
+{
+public:
+    /**
+     * @brief Construct a new \c ConsultInterface for communicating with a
+     *      Consult device.
+     *
+     * @param byte_interface The interface with which to communicate with the
+     *      Consult device.
+     */
+    ConsultInterface(std::unique_ptr<ByteInterface> byte_interface);
+
+    // ConsultInterface is not copyable.
+    ConsultInterface(const ConsultInterface&) = delete;
+    ConsultInterface& operator=(const ConsultInterface&) = delete;
+    // ConsultInterface is movable.
+    ConsultInterface(ConsultInterface&&);
+    ConsultInterface& operator=(ConsultInterface&&);
+
+    /**
+     * @brief Destroy the \c ConsultInterface .
+     */
+    virtual ~ConsultInterface();
+
+    /**
+     * @brief Read identifying information about the ECU.
+     *
+     * @return ECUMetadata describing the ECU.
+     */
+    ECUMetadata readECUMetadata();
+
+    /**
+     * @brief Read any active fault codes from the ECU.
+     *
+     * @return FaultCodes describing recently observed fault codes.
+     */
+    FaultCodes readFaultCodes();
+
+    /**
+     * @brief Read the current value of one or more \c EngineParameter s from
+     *      the ECU.
+     *
+     * @param params The \c EngineParameter s to read.
+     * @return EngineParameters describing the current value of each of the
+     *      requested parameters.
+     */
+    EngineParameters readEngineParameters(const std::vector<EngineParameter>& params);
+
+    /**
+     * @brief Request a stream of the live value of one or more \c
+     *      EngineParameter s from the ECU.
+     *
+     * The returned stream uses this \c ConsultInterface 's underlying
+     * connection to retrieve the data. The stream object must live no longer
+     * than this interface. While the stream object is alive, no further methods
+     * may be called on this interface.
+     *
+     * @param params The \c EngineParameter s to stream.
+     * @return EngineParametersStream object representing the streamed data.
+     *      This RAII object will continue streaming data until disposed of, at
+     *      which point it will halt the streamed data.
+     */
+    EngineParametersStream streamEngineParameters(const std::vector<EngineParameter>& params);
+
+private:
+    friend class ConsultResponseStream<EngineParameters>;
+    class impl;
+    std::unique_ptr<impl> pimpl;
+};
+
+
+template <>
+class ConsultResponseStream<EngineParameters> {
+public:
+    ConsultResponseStream(ConsultInterface::impl* pimpl, const std::vector<EngineParameter>& parameters);
+
+    // As the stream uses RAII, it is not copyable.
+    ConsultResponseStream(const ConsultResponseStream<EngineParameters>&) = delete;
+    ConsultResponseStream<EngineParameters>& operator=(const ConsultResponseStream<EngineParameters>&) = delete;
+
+    // The stream can be moved, however.
+    ConsultResponseStream(ConsultResponseStream<EngineParameters>&&);
+    ConsultResponseStream<EngineParameters>& operator=(ConsultResponseStream<EngineParameters>&&);
+
+    ~ConsultResponseStream();
+
+    /// @copydoc ConsultResponseStream::getFrame()
+    EngineParameters getFrame();
+
+private:
+    ConsultInterface::impl* pimpl;
+    std::vector<EngineParameter> parameters;
+};
 
 #endif

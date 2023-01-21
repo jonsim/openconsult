@@ -66,6 +66,7 @@ enum class RegisterIds : uint8_t {
 std::vector<uint8_t> registersToBytes(std::initializer_list<RegisterIds> params) {
     std::vector<uint8_t> bytes;
     for (auto param : params) {
+        bytes.push_back(0x5A);
         bytes.push_back(static_cast<uint8_t>(param));
     }
     return bytes;

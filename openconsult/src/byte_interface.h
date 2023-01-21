@@ -11,6 +11,8 @@
 class ByteInterface
 {
 public:
+    virtual ~ByteInterface() = default;
+
     /**
      * @brief Performs a blocking read of data from the interface.
      *
