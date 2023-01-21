@@ -11,8 +11,7 @@ namespace openconsult {
 /**
  * @brief Basic interface for communicating on a generic bytewise interface.
  */
-class ByteInterface
-{
+class ByteInterface {
 public:
     virtual ~ByteInterface() = default;
 

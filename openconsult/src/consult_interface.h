@@ -114,8 +114,7 @@ using EngineParametersStream = ConsultResponseStream<EngineParameters>;
 /**
  * @brief RAII class for communicating with a Consult device.
  */
-class ConsultInterface
-{
+class ConsultInterface {
 public:
     /**
      * @brief Construct a new \c ConsultInterface for communicating with a

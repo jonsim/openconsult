@@ -31,8 +31,7 @@ public:
  * @brief Basic RAII interface for communicating with a serial port in a
  *      platform-agnostic manner.
  */
-class SerialPort : public ByteInterface
-{
+class SerialPort : public ByteInterface {
 public:
     /**
      * @brief Construct a new \c SerialPort . The serial port is configured for

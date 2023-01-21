@@ -13,8 +13,7 @@ namespace openconsult {
  * @brief \c ByteInterface that reads from a log file and replays communications
  * described within it.
  */
-class LogReplay : public ByteInterface
-{
+class LogReplay : public ByteInterface {
 public:
     /**
      * @brief Construct a new \c LogReplay .
