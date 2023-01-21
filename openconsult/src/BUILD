@@ -1,9 +1,8 @@
 cc_library(
     name = "openconsult",
     deps = [
-        "byte_interface",
-        "common",
-        "connection",
+        "consult_interface",
+        "log_recorder",
         "log_replay",
         "serial.posix",
     ],
@@ -19,13 +18,6 @@ cc_library(
 cc_library(
     name = "common",
     hdrs = ["common.h"],
-    visibility = ["//openconsult/test:__pkg__"],
-)
-
-cc_library(
-    name = "connection",
-    hdrs = ["connection.h"],
-    srcs = ["connection.cpp"],
     visibility = ["//openconsult/test:__pkg__"],
 )
 
