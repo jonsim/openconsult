@@ -82,15 +82,31 @@ dist_t advance(It& iter, dist_t n, It bound) {
 
 
 /**
- * @brief Class holding a range between two iterators.
+ * @brief Class holding a range between two iterators. This class is itself an
+ * iterator - incrementing which will increment the beginning of the range.
  *
- * @tparam Iter Iterator type that the range is defined by.
+ * @tparam Iter Type of the iterator that the range is defined by.
+ * @tparam T    Type of the values that can be obtained by dereferencing Iter.
+ *      This type should be void for output iterators.
  */
-template<class Iter>
+template<class Iter, class T = typename Iter::value_type>
 class range {
 public:
+    /// @brief The iterator type that defines this range.
+    using iterator = Iter;
+    /// @brief Type of the values obtained by deferencing this iterator.
+    using value_type = T;
+    /// @brief The category of the iterator defining this range.
+    using iterator_category = typename iterator::iterator_category;
+    /// @brief Integer type representing the difference between this range's
+    /// iterators.
+    using difference_type = typename iterator::difference_type;
+    using pointer = typename iterator::pointer;
+    using reference = typename iterator::reference;
+
     /**
-     * @brief Construct a new \c range between two iterators.
+     * @brief Construct a new \c range between two iterators. \c end must be
+     * reachable from \c start .
      *
      * @param begin The starting iterator.
      * @param end The 'beyond the end' iterator.
@@ -123,12 +139,33 @@ public:
         : _begin(container.begin()), _end(container.end()) {
     }
 
-    bool operator==(const range<Iter>& other) const {
+    // ++prefix operator
+    range<iterator, value_type>& operator++() {
+        _begin++;
+        return *this;
+    }
+
+    // postfix++ operator
+    range<iterator, value_type> operator++(int) {
+        range<iterator, value_type> prev = *this;
+        ++(*this);
+        return prev;
+    }
+
+    bool operator==(const range<iterator, value_type>& other) const {
         return _begin == other._begin && _end == other._end;
     }
 
-    bool operator!=(const range<Iter>& other) const {
+    bool operator!=(const range<iterator, value_type>& other) const {
         return !(*this == other);
+    }
+
+    reference operator*() {
+        return *_begin;
+    }
+
+    pointer operator->() {
+        return &(*_begin);
     }
 
     /**
@@ -136,7 +173,7 @@ public:
      *
      * @return Iterator to the element at the start of the range.
      */
-    const Iter& begin() const {
+    const iterator& begin() const {
         return _begin;
     }
 
@@ -145,13 +182,31 @@ public:
      *
      * @return Iterator to the element 'beyond the end' of the range.
      */
-    const Iter& end() const {
+    const iterator& end() const {
         return _end;
     }
 
+    /**
+     * @brief Determines if this range is empty.
+     *
+     * @return \c true if this range has no elements, \c false otherwise.
+     */
+    bool empty() const {
+        return _begin == _end;
+    }
+
+    /**
+     * @brief Calculates the size of this range.
+     *
+     * @return The number of elements remaining in the range.
+     */
+    difference_type size() const {
+        return std::distance(_begin, _end);
+    }
+
 private:
-    Iter _begin;
-    Iter _end;
+    iterator _begin;
+    iterator _end;
 };
 
 /**
@@ -162,9 +217,9 @@ private:
  * @param end The 'beyond the end' iterator.
  * @return \c range of the type inferrred from the passed iterators.
  */
-template<class Iter>
-range<Iter> make_range(Iter begin, Iter end) {
-    return range<Iter>(begin, end);
+template<class iterator>
+range<iterator> make_range(iterator begin, iterator end) {
+    return range<iterator>(begin, end);
 }
 
 /**
@@ -177,9 +232,11 @@ range<Iter> make_range(Iter begin, Iter end) {
  * @param container The const container over which to construct the range.
  * @return \c range of the type inferrred from the passed container.
  */
-template<class Container, class Iter = typename Container::const_iterator>
-range<Iter> make_range(const Container& container) {
-    return range<Iter>(container);
+template<class Container,
+         class iterator = typename Container::const_iterator,
+         class value_type = typename Container::value_type>
+range<iterator, value_type> make_range(const Container& container) {
+    return range<iterator, value_type>(container);
 }
 
 /**
@@ -192,9 +249,11 @@ range<Iter> make_range(const Container& container) {
  * @param container The container over which to construct the range.
  * @return \c range of the type inferrred from the passed container.
  */
-template<class Container, class Iter = typename Container::iterator>
-range<Iter> make_range(Container& container) {
-    return range<Iter>(container);
+template<class Container,
+         class iterator = typename Container::iterator,
+         class value_type = typename Container::value_type>
+range<iterator, value_type> make_range(Container& container) {
+    return range<iterator, value_type>(container);
 }
 
 }

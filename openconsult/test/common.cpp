@@ -109,6 +109,26 @@ TEST(RangeTest, compare) {
     EXPECT_TRUE(range2 != range4);
 }
 
+TEST(RangeTest, empty) {
+    std::string s("hello");
+    EXPECT_FALSE(cmn::make_range(s).empty());
+    EXPECT_FALSE(cmn::make_range(s.begin(), s.end()).empty());
+    EXPECT_FALSE(cmn::make_range(s.begin(), ++s.begin()).empty());
+    EXPECT_FALSE(cmn::make_range(++s.begin(), s.end()).empty());
+    EXPECT_TRUE( cmn::make_range(s.begin(), s.begin()).empty());
+    EXPECT_TRUE( cmn::make_range(s.end(), s.end()).empty());
+}
+
+TEST(RangeTest, size) {
+    std::string s("hello");
+    EXPECT_EQ(5, cmn::make_range(s).size());
+    EXPECT_EQ(5, cmn::make_range(s.begin(), s.end()).size());
+    EXPECT_EQ(1, cmn::make_range(s.begin(), ++s.begin()).size());
+    EXPECT_EQ(4, cmn::make_range(++s.begin(), s.end()).size());
+    EXPECT_EQ(0, cmn::make_range(s.begin(), s.begin()).size());
+    EXPECT_EQ(0, cmn::make_range(s.end(), s.end()).size());
+}
+
 TEST(RangeTest, foreach) {
     std::string s("hello");
     auto range = cmn::make_range(s);
@@ -124,6 +144,62 @@ TEST(RangeTest, foreach_const) {
     auto range = cmn::make_range(s);
     std::stack<char> stack {{ 'o', 'l', 'l', 'e', 'h' }};
     for (char c : range) {
+        ASSERT_EQ(c, stack.top());
+        stack.pop();
+    }
+}
+
+TEST(RangeTest, dereference) {
+    std::string s("hello");
+    auto range = cmn::make_range(s);
+    EXPECT_EQ('h', *range);
+    *range = 'j';
+    EXPECT_EQ('j', *range);
+}
+
+TEST(RangeTest, dereference_const) {
+    const std::string s("hello");
+    auto range = cmn::make_range(s);
+    EXPECT_EQ('h', *range);
+}
+
+TEST(RangeTest, arrow) {
+    struct Char {
+        char c;
+    };
+    std::vector<Char> chars {{'h'}, {'e'}, {'l'}, {'l'}, {'o'}};
+    auto range = cmn::make_range(chars);
+    EXPECT_EQ('h', range->c);
+    range->c = 'j';
+    EXPECT_EQ('j', range->c);
+}
+
+TEST(RangeTest, arrow_const) {
+    struct Char {
+        char c;
+    };
+    const std::vector<Char> chars {{'h'}, {'e'}, {'l'}, {'l'}, {'o'}};
+    auto range = cmn::make_range(chars);
+    EXPECT_EQ('h', range->c);
+}
+
+TEST(RangeTest, increment) {
+    std::string s("hello");
+    auto range = cmn::make_range(s);
+    std::stack<char> stack {{ 'o', 'l', 'l', 'e', 'h' }};
+    while (!range.empty()) {
+        char c = *(range++);
+        ASSERT_EQ(c, stack.top());
+        stack.pop();
+    }
+}
+
+TEST(RangeTest, increment_const) {
+    const std::string s("hello");
+    auto range = cmn::make_range(s);
+    std::stack<char> stack {{ 'o', 'l', 'l', 'e', 'h' }};
+    while (!range.empty()) {
+        char c = *(range++);
         ASSERT_EQ(c, stack.top());
         stack.pop();
     }
