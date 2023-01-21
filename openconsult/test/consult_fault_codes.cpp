@@ -1,4 +1,5 @@
 #include "openconsult/src/consult_fault_codes.h"
+#include "openconsult/src/consult_fault_codes.internal.h"
 
 #include <gtest/gtest.h>
 

@@ -24,7 +24,8 @@ cc_library(
 cc_library(
     name = "consult_fault_codes",
     hdrs = ["consult_fault_codes.h"],
-    srcs = ["consult_fault_codes.cpp"],
+    srcs = ["consult_fault_codes.internal.h",
+            "consult_fault_codes.cpp"],
     deps = [
         "common",
     ],

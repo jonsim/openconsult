@@ -1,4 +1,5 @@
 #include "consult_fault_codes.h"
+#include "consult_fault_codes.internal.h"
 #include "common.h"
 
 #include <stdexcept>
