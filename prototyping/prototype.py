@@ -141,8 +141,8 @@ class SerialDeviceLog:
     class EntryType(enum.Enum):
         READ = enum.auto()
         WRITE = enum.auto()
-    EntryType.READ.log_prefix = 'R: '
-    EntryType.WRITE.log_prefix = 'W: '
+    EntryType.READ.log_prefix = 'R '
+    EntryType.WRITE.log_prefix = 'W '
 
     def __init__(self, path):
         self._path = path
