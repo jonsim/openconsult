@@ -46,14 +46,15 @@ public:
 
 
 /**
- * @brief A response holding the ECU's part number.
+ * @brief A response holding metadata about the ECU.
  */
-struct ECUPartNumber : public ConsultResponse {
-    ECUPartNumber(const std::vector<uint8_t>& frame);
+struct ECUMetadata : public ConsultResponse {
+    ECUMetadata(const std::vector<uint8_t>& frame);
 
     std::string toJSON() const override;
 
-    /// @brief The ECU's part number. May contain whitespace.
+    /// @brief The ECU's part number. May contain whitespace and other
+    ///     non-alphanumeric characters.
     std::string part_number;
 };
 

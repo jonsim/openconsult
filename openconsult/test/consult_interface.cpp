@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 #include "openconsult/src/consult_interface.h"
 
-TEST(ECUPartNumberTest, toJSON) {
+TEST(ECUMetadataTest, toJSON) {
     std::vector<uint8_t> data {0x00, 0x00, 0x04, 0x88, 0x00, 0x00, 0x00, 0x00,
                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                0x00, 0x00, 0x00, 0x05, 0x0F, 0x00};
-    ECUPartNumber part_number(data);
+    ECUMetadata metadata(data);
     EXPECT_EQ("{\n"
               "  \"part_number\": \"0488 23710-50F00\"\n"
-              "}", part_number.toJSON());
+              "}", metadata.toJSON());
 }
 
 

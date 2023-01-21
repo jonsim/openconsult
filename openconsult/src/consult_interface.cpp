@@ -5,10 +5,10 @@
 
 
 //
-// ECUPartNumber
+// ECUMetadata
 //
 
-ECUPartNumber::ECUPartNumber(const std::vector<uint8_t>& frame) {
+ECUMetadata::ECUMetadata(const std::vector<uint8_t>& frame) {
     if (frame.size() != 22) {
         throw std::invalid_argument("Invalid ECU part number response");
     }
@@ -20,7 +20,7 @@ ECUPartNumber::ECUPartNumber(const std::vector<uint8_t>& frame) {
         frame[21]);
 }
 
-std::string ECUPartNumber::toJSON() const {
+std::string ECUMetadata::toJSON() const {
     return cmn::pformat("{\n"
                         "  \"part_number\": \"%s\"\n"
                         "}",
