@@ -34,7 +34,8 @@ cc_library(
 cc_library(
     name = "consult_engine_parameters",
     hdrs = ["consult_engine_parameters.h"],
-    srcs = ["consult_engine_parameters.cpp"],
+    srcs = ["consult_engine_parameters.internal.h",
+            "consult_engine_parameters.cpp"],
     deps = [
         "common",
     ],

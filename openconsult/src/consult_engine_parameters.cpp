@@ -1,4 +1,5 @@
 #include "consult_engine_parameters.h"
+#include "consult_engine_parameters.internal.h"
 #include "common.h"
 
 #include <initializer_list>

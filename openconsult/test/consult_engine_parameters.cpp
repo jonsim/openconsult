@@ -1,4 +1,5 @@
 #include "openconsult/src/consult_engine_parameters.h"
+#include "openconsult/src/consult_engine_parameters.internal.h"
 
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>

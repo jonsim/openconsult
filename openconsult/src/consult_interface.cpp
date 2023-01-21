@@ -1,5 +1,6 @@
 #include "consult_interface.h"
 #include "common.h"
+#include "consult_engine_parameters.internal.h"
 #include <sstream>
 
 namespace openconsult {
