@@ -57,7 +57,7 @@ SerialPort::SerialPort(const std::string& device, uint32_t baud_rate)
     // Open the port.
     int fd = open(device.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0) {
-        std::string error = cmn::pformat("Failed to open %s: %s", device, strerror(errno));
+        std::string error = cmn::pformat("Failed to open %s: %s", device.c_str(), strerror(errno));
         throw os_error(error);
     }
 
