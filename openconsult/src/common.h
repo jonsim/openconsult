@@ -24,7 +24,7 @@ namespace cmn {
  * @return std::string holding the formatted result.
  */
 template<class... Args>
-std::string pformat(const std::string& format, Args&&... args) {
+inline std::string pformat(const std::string& format, Args&&... args) {
     int size_s = std::snprintf(nullptr, 0, format.c_str(), args...) + 1; // Add space for '\0'.
     if (size_s <= 0) {
         throw std::runtime_error("Error during formatting.");
@@ -44,7 +44,7 @@ std::string pformat(const std::string& format, Args&&... args) {
  * @param bytes Vector of bytes to format.
  * @return Formatted string representing the bytes.
  */
-std::string format_bytes(const std::vector<uint8_t>& bytes) {
+inline std::string format_bytes(const std::vector<uint8_t>& bytes) {
     std::ostringstream sstream;
     sstream << std::hex << std::setfill('0');
     for (const uint8_t& byte : bytes) {
@@ -66,7 +66,7 @@ std::string format_bytes(const std::vector<uint8_t>& bytes) {
  * @return dist_t Difference between \c n and the actual distance incremented.
  */
 template<class It, typename dist_t = typename std::iterator_traits<It>::difference_type>
-dist_t advance(It& iter, dist_t n, It bound) {
+inline dist_t advance(It& iter, dist_t n, It bound) {
     if (n < 0) {
         // Unlike the C++20 version, this implementation doesn't support
         // decrementing advances.
