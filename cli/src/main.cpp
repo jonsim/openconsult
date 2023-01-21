@@ -1,5 +1,6 @@
 #include "openconsult/src/common.h"
 #include "openconsult/src/consult_interface.h"
+#include "openconsult/src/log_recorder.h"
 #include "openconsult/src/log_replay.h"
 #include "openconsult/src/serial.h"
 
@@ -55,22 +56,30 @@ int main(int argc, char** argv) {
     std::cout << device_id << "\n";
     bool replay = absl::GetFlag(FLAGS_replay);
 
+    // Construct the device to perform Consult transactions with.
     std::unique_ptr<ByteInterface> device;
+    std::ifstream replay_file;
+    std::ofstream log_file;
     if (replay) {
         bool wrap = absl::GetFlag(FLAGS_replay_wrap);
-        std::ifstream device_file(device_id, std::ios_base::in);
-        if (!device_file.good()) {
+        replay_file = std::ifstream(device_id, std::ios_base::in);
+        if (!replay_file.good()) {
             reportUsageError(cmn::pformat("Failed to open %s", device_id.c_str()));
         }
-        device = std::unique_ptr<ByteInterface>(new LogReplay(device_file, wrap));
+        device = std::unique_ptr<ByteInterface>(new LogReplay(replay_file, wrap));
     } else {
         std::string log_path = absl::GetFlag(FLAGS_log);
-        if (!log_path.empty()) {
-            // Construct the log.
-        }
         device = std::unique_ptr<ByteInterface>(new SerialPort(device_id, 9600));
+        if (!log_path.empty()) {
+            log_file = std::ofstream(log_path, std::ios_base::out);
+            if (!log_file.good()) {
+                reportUsageError(cmn::pformat("Failed to open %s", log_path.c_str()));
+            }
+            device = std::unique_ptr<ByteInterface>(new LogRecorder(std::move(device), log_file));
+        }
     }
 
+    // Construct the ConsultInterface.
     ConsultInterface consult(std::move(device));
 
     return 0;
