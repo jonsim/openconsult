@@ -1,7 +1,8 @@
-#include <sstream>
-#include "common.h"
 #include "consult_interface.h"
+#include "common.h"
+#include <sstream>
 
+namespace openconsult {
 
 
 //
@@ -332,4 +333,7 @@ EngineParametersStream ConsultInterface::streamEngineParameters(const std::vecto
     }
     pimpl->execute(request, 1, 1);
     return EngineParametersStream(pimpl.get(), params);
+}
+
+
 }

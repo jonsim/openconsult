@@ -9,7 +9,7 @@ cc_test(
 )
 
 cc_test(
-    name = "consult_engine_parameters",
+    name = "consult_engine_parameters_test",
     size = "small",
     srcs = ["consult_engine_parameters.cpp"],
     deps = [
@@ -19,7 +19,7 @@ cc_test(
 )
 
 cc_test(
-    name = "consult_fault_codes",
+    name = "consult_fault_codes_test",
     size = "small",
     srcs = ["consult_fault_codes.cpp"],
     deps = [
@@ -29,7 +29,7 @@ cc_test(
 )
 
 cc_test(
-    name = "consult_interface",
+    name = "consult_interface_test",
     size = "small",
     srcs = ["consult_interface.cpp"],
     deps = [

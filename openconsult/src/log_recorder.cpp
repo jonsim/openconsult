@@ -1,5 +1,7 @@
-#include "common.h"
 #include "log_recorder.h"
+#include "common.h"
+
+namespace openconsult {
 
 
 /**
@@ -60,4 +62,7 @@ void LogRecorder::write(const std::vector<uint8_t>& bytes) {
             pimpl->log_stream << cmn::format_bytes(bytes);
             break;
     }
+}
+
+
 }

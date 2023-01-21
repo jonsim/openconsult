@@ -1,10 +1,13 @@
 #ifndef OPENCONSULT_LIB_CONSULT_ENGINE_PARAMETERS
 #define OPENCONSULT_LIB_CONSULT_ENGINE_PARAMETERS
 
+#include "common.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
-#include "common.h"
+
+namespace openconsult {
 
 
 /**
@@ -112,5 +115,8 @@ std::string engineParameterName(EngineParameter parameter);
  * @throws std::invalid_argument if \c parameter is not valid.
  */
 std::string engineParameterDescription(EngineParameter parameter);
+
+
+}
 
 #endif

@@ -1,7 +1,12 @@
-#include <sstream>
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
 #include "openconsult/src/log_recorder.h"
+
+#include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
+
+#include <sstream>
+
+using namespace openconsult;
+
 
 TEST(LogRecorderTest, ctor) {
     std::ostringstream stream;

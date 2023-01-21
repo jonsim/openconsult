@@ -1,7 +1,11 @@
+#include "consult_engine_parameters.h"
+#include "common.h"
+
 #include <initializer_list>
 #include <stdexcept>
-#include "common.h"
-#include "consult_engine_parameters.h"
+
+namespace openconsult {
+
 
 /**
  * @brief Internal enum containing the Consult register identifiers. The
@@ -450,4 +454,7 @@ std::string engineParameterDescription(EngineParameter parameter) {
             std::string error = cmn::pformat("Unknown engine parameter: %02x", parameter);
             throw std::invalid_argument(error);
     };
+}
+
+
 }

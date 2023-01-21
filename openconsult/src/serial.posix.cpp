@@ -1,11 +1,16 @@
+#include "serial.h"
+#include "common.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+
 #include <string>
-#include "common.h"
-#include "serial.h"
+
+namespace openconsult {
+
 
 struct SerialPort::impl {
     int port_fd;
@@ -122,4 +127,7 @@ void SerialPort::write(const std::vector<uint8_t>& bytes) {
         }
         total_bytes_written += static_cast<std::size_t>(bytes_written);
     }
+}
+
+
 }

@@ -1,6 +1,14 @@
+#include "openconsult/src/consult_interface.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "openconsult/src/consult_interface.h"
+
+using namespace openconsult;
+using ::testing::AtLeast;
+using ::testing::ElementsAre;
+using ::testing::Exactly;
+using ::testing::Return;
+
 
 TEST(ECUMetadataTest, toJSON) {
     std::vector<uint8_t> data {0x00, 0x00, 0x04, 0x88, 0x00, 0x00, 0x00, 0x00,
@@ -61,11 +69,6 @@ public:
     MOCK_METHOD(std::vector<uint8_t>, read, (std::size_t size), (override));
     MOCK_METHOD(void, write, (const std::vector<uint8_t>& bytes), (override));
 };
-
-using ::testing::AtLeast;
-using ::testing::ElementsAre;
-using ::testing::Exactly;
-using ::testing::Return;
 
 TEST(ConsultInterfaceTest, ctor) {
     std::unique_ptr<MockByteInterface> byte_interface(new MockByteInterface);

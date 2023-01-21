@@ -1,6 +1,10 @@
-#include <stdexcept>
-#include "common.h"
 #include "consult_fault_codes.h"
+#include "common.h"
+
+#include <stdexcept>
+
+namespace openconsult {
+
 
 FaultCode faultCodeFromId(uint8_t id) {
     FaultCode code = static_cast<FaultCode>(id);
@@ -365,4 +369,7 @@ std::string faultCodeDescription(FaultCode code) {
             std::string error = cmn::pformat("Unknown fault code: %02x", code);
             throw std::invalid_argument(error);
     }
+}
+
+
 }

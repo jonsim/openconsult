@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 
+namespace openconsult {
+
+
 /**
  * @brief Class that records read and write transactions to a log. The generated
  *      log may be subsequently passed to a \c LogReplay to replay the
@@ -43,5 +46,8 @@ private:
     class impl;
     std::unique_ptr<impl> pimpl;
 };
+
+
+}
 
 #endif

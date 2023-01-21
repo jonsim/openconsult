@@ -1,10 +1,14 @@
-#include <sstream>
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
-#include "openconsult/src/common.h"
 #include "openconsult/src/log_replay.h"
+#include "openconsult/src/common.h"
 
+#include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
+
+#include <sstream>
+
+using namespace openconsult;
 using ::testing::ElementsAre;
+
 
 TEST(LogReplayTest, ctor_empty) {
     std::istringstream stream("");

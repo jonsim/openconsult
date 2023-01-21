@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+namespace openconsult {
+
+
 /**
  * @brief Basic interface for communicating on a generic bytewise interface.
  */
@@ -30,5 +33,8 @@ public:
      */
     virtual void write(const std::vector<uint8_t>& bytes) = 0;
 };
+
+
+}
 
 #endif

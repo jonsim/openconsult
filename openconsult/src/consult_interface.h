@@ -1,14 +1,17 @@
 #ifndef OPENCONSULT_LIB_CONSULT_INTERFACE
 #define OPENCONSULT_LIB_CONSULT_INTERFACE
 
+#include "byte_interface.h"
+#include "consult_engine_parameters.h"
+#include "consult_fault_codes.h"
+
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include "byte_interface.h"
-#include "consult_engine_parameters.h"
-#include "consult_fault_codes.h"
+
+namespace openconsult {
 
 
 /**
@@ -204,5 +207,8 @@ private:
     ConsultInterface::impl* pimpl;
     std::vector<EngineParameter> parameters;
 };
+
+
+}
 
 #endif

@@ -1,8 +1,11 @@
-#include <gtest/gtest.h>
-#include <gmock/gmock-matchers.h>
 #include "openconsult/src/consult_engine_parameters.h"
 
+#include <gmock/gmock-matchers.h>
+#include <gtest/gtest.h>
+
+using namespace openconsult;
 using ::testing::ElementsAre;
+
 
 TEST(ConsultEngineParametersTest, engineParameterCommand) {
     EXPECT_THAT(engineParameterCommand(EngineParameter::ENGINE_RPM),

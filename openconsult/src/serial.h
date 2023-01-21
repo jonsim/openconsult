@@ -1,12 +1,16 @@
 #ifndef OPENCONSULT_LIB_SERIAL
 #define OPENCONSULT_LIB_SERIAL
 
+#include "byte_interface.h"
+
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "byte_interface.h"
+
+namespace openconsult {
+
 
 /**
  * @brief Exception type thrown to indicate an unhandled error coming from an
@@ -69,5 +73,8 @@ private:
     struct impl;
     std::unique_ptr<impl> pimpl;
 };
+
+
+}
 
 #endif

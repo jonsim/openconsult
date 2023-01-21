@@ -1,8 +1,13 @@
+#include "serial.h"
+#include "common.h"
+
 #include <Windows.h>
+
 #include <string>
 #include <system_error>
-#include "common.h"
-#include "serial.h"
+
+namespace openconsult {
+
 
 struct SerialPort::impl {
     HANDLE port_handle;
@@ -88,4 +93,7 @@ void SerialPort::write(const std::vector<uint8_t>& bytes) {
         }
         total_bytes_written += bytes_written;
     }
+}
+
+
 }

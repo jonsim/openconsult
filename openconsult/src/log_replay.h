@@ -1,9 +1,13 @@
 #ifndef OPENCONSULT_LIB_LOG_REPLAY
 #define OPENCONSULT_LIB_LOG_REPLAY
 
+#include "byte_interface.h"
+
 #include <istream>
 #include <memory>
-#include "byte_interface.h"
+
+namespace openconsult {
+
 
 /**
  * @brief \c ByteInterface that reads from a log file and replays communications
@@ -42,5 +46,8 @@ private:
     class impl;
     std::unique_ptr<impl> pimpl;
 };
+
+
+}
 
 #endif

@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <string>
 
+namespace openconsult {
+
+
 /**
  * @brief A fault code used by the ECU to describe a fault.
  *
@@ -123,5 +126,8 @@ std::string faultCodeName(FaultCode code);
  * @throws std::invalid_argument if \c code is not valid.
  */
 std::string faultCodeDescription(FaultCode code);
+
+
+}
 
 #endif

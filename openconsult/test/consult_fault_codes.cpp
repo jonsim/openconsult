@@ -1,5 +1,9 @@
-#include <gtest/gtest.h>
 #include "openconsult/src/consult_fault_codes.h"
+
+#include <gtest/gtest.h>
+
+using namespace openconsult;
+
 
 TEST(ConsultFaultCodesTest, faultCodeFromId) {
     EXPECT_EQ(faultCodeFromId(22u), FaultCode::FUEL_PUMP);

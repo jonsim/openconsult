@@ -1,10 +1,13 @@
+#include "log_replay.h"
+#include "common.h"
+
 #include <algorithm>
 #include <istream>
 #include <stdexcept>
 #include <stdlib.h>
 #include <vector>
-#include "common.h"
-#include "log_replay.h"
+
+namespace openconsult {
 
 
 /**
@@ -353,4 +356,7 @@ std::vector<uint8_t> LogReplay::read(std::size_t size) {
 
 void LogReplay::write(const std::vector<uint8_t>& bytes) {
     pimpl->write(bytes);
+}
+
+
 }

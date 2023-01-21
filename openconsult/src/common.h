@@ -5,11 +5,12 @@
 #include <iterator>
 #include <memory>
 #include <sstream>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace cmn {
+
 
 /**
  * @brief Formats \c args according to the printf-style format string \c format
@@ -255,6 +256,7 @@ template<class Container,
 range<iterator, value_type> make_range(Container& container) {
     return range<iterator, value_type>(container);
 }
+
 
 }
 
