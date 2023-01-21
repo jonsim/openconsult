@@ -15,6 +15,7 @@
  * @brief A response from a \c ConsultInterface .
  */
 class ConsultResponse {
+public:
     /**
      * @brief Serialize the response into JSON.
      *
@@ -33,6 +34,7 @@ class ConsultResponse {
  */
 template <class ResponseType>
 class ConsultResponseStream {
+public:
     /**
      * @brief Blocking call to retrieve a single frame from the stream. Each
      *      call will return a new frame, blocking until it is available.
@@ -47,9 +49,7 @@ class ConsultResponseStream {
  * @brief A response holding the ECU's part number.
  */
 struct ECUPartNumber : public ConsultResponse {
-    ECUPartNumber(std::string part_no)
-        : part_number(part_no) {
-    }
+    ECUPartNumber(const std::vector<uint8_t>& frame);
 
     std::string toJSON() const override;
 
@@ -62,11 +62,7 @@ struct ECUPartNumber : public ConsultResponse {
  * @brief A response holding information about a single observed fault.
  */
 struct FaultCodeData : public ConsultResponse {
-public:
-    FaultCodeData(FaultCode code, uint32_t starts)
-        : fault_code(code)
-        , starts_since_observed(starts) {
-    }
+    FaultCodeData(const std::vector<uint8_t>& frame);
 
     std::string toJSON() const override;
 
@@ -82,9 +78,7 @@ public:
  * @brief A response holding information about all observed fault codes.
  */
 struct FaultCodes : public ConsultResponse {
-    FaultCodes(std::initializer_list<FaultCodeData> codes)
-        : fault_codes(codes) {
-    }
+    FaultCodes(const std::vector<uint8_t>& frame);
 
     std::string toJSON() const override;
 
@@ -97,9 +91,8 @@ struct FaultCodes : public ConsultResponse {
  * @brief A response holding the current value of one or more engine parameters.
  */
 struct EngineParameters : public ConsultResponse {
-    EngineParameters(std::map<EngineParameter, double> params)
-        : parameters(params) {
-    }
+    EngineParameters(const std::vector<EngineParameter>& parameters,
+                     const std::vector<uint8_t>& frame);
 
     std::string toJSON() const override;
 

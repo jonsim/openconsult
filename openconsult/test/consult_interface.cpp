@@ -2,15 +2,19 @@
 #include "openconsult/src/consult_interface.h"
 
 TEST(ECUPartNumberTest, toJSON) {
-    ECUPartNumber part_number("1480 23710-353032");
+    std::vector<uint8_t> data {0x00, 0x00, 0x04, 0x88, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                               0x00, 0x00, 0x00, 0x05, 0x0F, 0x00};
+    ECUPartNumber part_number(data);
     EXPECT_EQ("{\n"
-              "  \"part_number\": \"1480 23710-353032\"\n"
+              "  \"part_number\": \"0488 23710-50F00\"\n"
               "}", part_number.toJSON());
 }
 
 
 TEST(FaultCodeDataTest, toJSON) {
-    FaultCodeData code(FaultCode::FUEL_INJECTOR, 42);
+    std::vector<uint8_t> data {51, 42};
+    FaultCodeData code(data);
     EXPECT_EQ("{\n"
               "  \"code\": 51,\n"
               "  \"name\": \"Injector Circuit\",\n"
@@ -21,8 +25,8 @@ TEST(FaultCodeDataTest, toJSON) {
 
 
 TEST(FaultCodesTest, toJSON) {
-    FaultCodes codes({{FaultCode::KNOCK_SENSOR, 13},
-                      {FaultCode::INJECTOR_LEAK, 17}});
+    std::vector<uint8_t> data {34, 13, 45, 17};
+    FaultCodes codes(data);
     EXPECT_EQ("[\n"
               "  {\n"
               "    \"code\": 34,\n"
@@ -41,10 +45,11 @@ TEST(FaultCodesTest, toJSON) {
 
 
 TEST(EngineParametersTest, toJSON) {
-    EngineParameters parameters({std::make_pair(EngineParameter::ENGINE_RPM, 1234.0),
-                                 std::make_pair(EngineParameter::BATTERY_VOLTAGE, 14.86)});
+    std::vector<EngineParameter> params {EngineParameter::ENGINE_RPM, EngineParameter::BATTERY_VOLTAGE};
+    std::vector<uint8_t> data {0x01, 0x59, 0x97};
+    EngineParameters parameters(params, data);
     EXPECT_EQ("{\n"
-              "  \"engine_speed_rpm\": 1234.00,\n"
-              "  \"battery_v\": 14.86\n"
+              "  \"engine_speed_rpm\": 4312.50,\n"
+              "  \"battery_v\": 12.08\n"
               "}", parameters.toJSON());
 }

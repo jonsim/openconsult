@@ -2,11 +2,43 @@
 #include "common.h"
 #include "consult_interface.h"
 
+
+
+//
+// ECUPartNumber
+//
+
+ECUPartNumber::ECUPartNumber(const std::vector<uint8_t>& frame) {
+    if (frame.size() != 22) {
+        throw std::invalid_argument("Invalid ECU part number response");
+    }
+    part_number = cmn::pformat("%02X%02X 23710-%X%02X%02X",
+        frame[2],
+        frame[3],
+        frame[19],
+        frame[20],
+        frame[21]);
+}
+
 std::string ECUPartNumber::toJSON() const {
     return cmn::pformat("{\n"
                         "  \"part_number\": \"%s\"\n"
                         "}",
                         part_number.c_str());
+}
+
+
+
+//
+// FaultCodeData
+//
+
+FaultCodeData::FaultCodeData(const std::vector<uint8_t>& frame) {
+    if (frame.size() != 2) {
+        throw std::invalid_argument("Invalid fault code response");
+    }
+    fault_code = faultCodeFromId(frame[0]);
+    starts_since_observed = frame[1];
 }
 
 std::string FaultCodeData::toJSON() const {
@@ -25,6 +57,22 @@ std::string FaultCodeData::toJSON() const {
     sstream << "  \"starts_since_observed\": " << starts_since_observed << "\n"
                 << "}";
     return sstream.str();
+}
+
+
+
+//
+// FaultCodes
+//
+
+FaultCodes::FaultCodes(const std::vector<uint8_t>& frame) {
+    if ((frame.size() & 1) != 0) {
+        throw std::invalid_argument("Invalid fault codes response");
+    }
+    for (std::size_t i = 0; i < frame.size(); i += 2) {
+        auto sub_frame = std::vector<uint8_t>{{frame[i], frame[i+1]}};
+        fault_codes.push_back(sub_frame);
+    }
 }
 
 std::string FaultCodes::toJSON() const {
@@ -50,6 +98,26 @@ std::string FaultCodes::toJSON() const {
     }
     sstream << "\n]";
     return sstream.str();
+}
+
+
+
+//
+// EngineParameters
+//
+
+EngineParameters::EngineParameters(const std::vector<EngineParameter>& params,
+                                   const std::vector<uint8_t>& frame) {
+    if (frame.size() < params.size()) {
+        throw std::invalid_argument("Invalid engine parameters response");
+    }
+    auto range = cmn::make_range(frame);
+    for (auto param : params) {
+        parameters[param] = engineParameterDecode(param, range);
+    }
+    if (!range.empty()) {
+        throw std::invalid_argument("Invalid engine parameters response");
+    }
 }
 
 std::string EngineParameters::toJSON() const {
