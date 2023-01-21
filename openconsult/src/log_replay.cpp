@@ -207,14 +207,6 @@ public:
         return *record_cursor;
     }
 
-    const uint8_t& operator->() const {
-        return *record_cursor;
-    }
-
-    uint8_t& operator->() {
-        return *record_cursor;
-    }
-
     // Other modifiers.
 public:
     /**

@@ -16,64 +16,69 @@ TEST(ConsultEngineParametersTest, engineParameterCommand) {
 
 
 TEST(ConsultEngineParametersTest, engineParameterDecode_one_byte_valid) {
-    EXPECT_EQ(engineParameterDecode(EngineParameter::COOLANT_TEMPERATURE, std::vector<uint8_t>{{0x25}}),
+    const std::vector<uint8_t> data {0x25, 0x99, 0x1c, 0x97, 0x99, 0x73, 0x75, 0x40};
+    auto range = cmn::make_range(data);
+    EXPECT_EQ(engineParameterDecode(EngineParameter::COOLANT_TEMPERATURE, range),
               -13.0);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_O2_SENSOR_VOLTAGE, std::vector<uint8_t>{{0x99}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_O2_SENSOR_VOLTAGE, range),
               1.53);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::VEHICLE_SPEED, std::vector<uint8_t>{{0x1c}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::VEHICLE_SPEED, range),
               56.0);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::BATTERY_VOLTAGE, std::vector<uint8_t>{{0x97}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::BATTERY_VOLTAGE, range),
               12.08);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::THROTTLE_POSITION, std::vector<uint8_t>{{0x99}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::THROTTLE_POSITION, range),
               3.06);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::IGNITION_TIMING, std::vector<uint8_t>{{0x73}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::IGNITION_TIMING, range),
               -5.0);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::AAC_VALVE, std::vector<uint8_t>{{0x75}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::AAC_VALVE, range),
               58.5);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_AIR_FUEL_ALPHA, std::vector<uint8_t>{{0x40}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_AIR_FUEL_ALPHA, range),
               64.0);
+    EXPECT_TRUE(range.empty());
 }
 
 TEST(ConsultEngineParametersTest, engineParameterDecode_two_byte_valid) {
-    EXPECT_EQ(engineParameterDecode(EngineParameter::ENGINE_RPM, std::vector<uint8_t>{{0x01, 0x59}}),
+    const std::vector<uint8_t> data {0x01, 0x59, 0x02, 0x69, 0x11, 0xa2};
+    auto range = cmn::make_range(data);
+    EXPECT_EQ(engineParameterDecode(EngineParameter::ENGINE_RPM, range),
               4312.5);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_MAF_VOLTAGE, std::vector<uint8_t>{{0x02, 0x69}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_MAF_VOLTAGE, range),
               3.085);
-    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_INJECTION_TIMING, std::vector<uint8_t>{{0x11, 0xa2}}),
+    EXPECT_EQ(engineParameterDecode(EngineParameter::LH_INJECTION_TIMING, range),
               0.04514);
+    EXPECT_TRUE(range.empty());
 }
 
 TEST(ConsultEngineParametersTest, engineParameterDecode_one_byte_invalid) {
+    const std::vector<uint8_t> data{1, 2, 3, 4};
+    auto empty_range = cmn::make_range(data.begin(), data.begin());
     EXPECT_THROW({
-        engineParameterDecode(EngineParameter::BATTERY_VOLTAGE, std::vector<uint8_t>{});
+        engineParameterDecode(EngineParameter::BATTERY_VOLTAGE, empty_range);
     }, std::invalid_argument);
-    EXPECT_THROW({
-        engineParameterDecode(EngineParameter::BATTERY_VOLTAGE, std::vector<uint8_t>{{0x01, 0x02}});
-    }, std::invalid_argument);
+    EXPECT_EQ(data.begin(), empty_range.begin()); // Range must not be modified
 }
 
 TEST(ConsultEngineParametersTest, engineParameterDecode_two_byte_invalid) {
+    const std::vector<uint8_t> data {1, 2, 3, 4};
+    auto empty_range = cmn::make_range(data.begin(), data.begin());
+    auto one_byte_range = cmn::make_range(data.begin(), ++(data.begin()));
     EXPECT_THROW({
-        engineParameterDecode(EngineParameter::ENGINE_RPM, std::vector<uint8_t>{});
+        engineParameterDecode(EngineParameter::ENGINE_RPM, empty_range);
     }, std::invalid_argument);
     EXPECT_THROW({
-        engineParameterDecode(EngineParameter::ENGINE_RPM, std::vector<uint8_t>{{0x01}});
+        engineParameterDecode(EngineParameter::ENGINE_RPM, one_byte_range);
     }, std::invalid_argument);
-    EXPECT_THROW({
-        engineParameterDecode(EngineParameter::ENGINE_RPM, std::vector<uint8_t>{{0x01, 0x02, 0x03}});
-    }, std::invalid_argument);
+    EXPECT_EQ(data.begin(), empty_range.begin()); // Range must not be modified
+    EXPECT_EQ(data.begin(), one_byte_range.begin());
 }
 
 TEST(ConsultEngineParametersTest, engineParameterDecode_parameter_invalid) {
+    const std::vector<uint8_t> data {1, 2, 3, 4};
+    auto range = cmn::make_range(data);
     EXPECT_THROW({
-        engineParameterDecode(static_cast<EngineParameter>(0xffu), std::vector<uint8_t>{});
+        engineParameterDecode(static_cast<EngineParameter>(0xffu), range);
     }, std::invalid_argument);
-    EXPECT_THROW({
-        engineParameterDecode(static_cast<EngineParameter>(0xffu), std::vector<uint8_t>{{0x01}});
-    }, std::invalid_argument);
-    EXPECT_THROW({
-        engineParameterDecode(static_cast<EngineParameter>(0xffu), std::vector<uint8_t>{{0x01, 0x02}});
-    }, std::invalid_argument);
+    EXPECT_EQ(data.begin(), range.begin()); // Range must not be modified
 }
 
 

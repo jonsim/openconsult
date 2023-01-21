@@ -152,80 +152,81 @@ std::vector<uint8_t> engineParameterCommand(EngineParameter parameter) {
 
 void arg_assert(bool assertion) {
     if (!assertion) {
-        throw std::invalid_argument("Invalid data length for engine parameter.");
+        throw std::invalid_argument("Not enough data to decode engine parameter.");
     }
 }
 
-double engineParameterDecode(EngineParameter parameter, const std::vector<uint8_t>& data) {
+double engineParameterDecode(EngineParameter parameter,
+                             cmn::range<std::vector<uint8_t>::const_iterator>& data) {
     // For multi-byte responses, byte[0] is always the MSB, byte[1] is the LSB.
     switch (parameter) {
         case EngineParameter::ENGINE_RPM:               // RPM
-            arg_assert(data.size() == 2);
-            return ((data[0] << 8) | (data[1])) * 12.5;
+            arg_assert(data.size() >= 2);
+            return ((*(data++) << 8) | *(data++)) * 12.5;
         case EngineParameter::LH_MAF_VOLTAGE:           // V
         case EngineParameter::RH_MAF_VOLTAGE:
-            arg_assert(data.size() == 2);
-            return ((data[0] << 8) | (data[1])) * 5 * 0.001;
+            arg_assert(data.size() >= 2);
+            return ((*(data++) << 8) | *(data++)) * 5 * 0.001;
         case EngineParameter::COOLANT_TEMPERATURE:      // deg C
         case EngineParameter::FUEL_TEMPERATURE:
         case EngineParameter::INTAKE_AIR_TEMPERATURE:
         case EngineParameter::TANK_FUEL_TEMPERATURE:
-            arg_assert(data.size() == 1);
-            return data[0] - 50;
+            arg_assert(data.size() >= 1);
+            return *(data++) - 50;
         case EngineParameter::LH_O2_SENSOR_VOLTAGE:     // V
         case EngineParameter::RH_O2_SENSOR_VOLTAGE:
-            arg_assert(data.size() == 1);
-            return data[0] * 10 * 0.001;
+            arg_assert(data.size() >= 1);
+            return *(data++) * 10 * 0.001;
         case EngineParameter::VEHICLE_SPEED:            // KM/H
-            arg_assert(data.size() == 1);
-            return data[0] * 2;
+            arg_assert(data.size() >= 1);
+            return *(data++) * 2;
         case EngineParameter::BATTERY_VOLTAGE:          // V
-            arg_assert(data.size() == 1);
-            return data[0] * 80 * 0.001;
+            arg_assert(data.size() >= 1);
+            return *(data++) * 80 * 0.001;
         case EngineParameter::THROTTLE_POSITION:        // V
         case EngineParameter::EXHAUST_GAS_TEMPERATURE:
-            arg_assert(data.size() == 1);
-            return data[0] * 20 * 0.001;
+            arg_assert(data.size() >= 1);
+            return *(data++) * 20 * 0.001;
         case EngineParameter::LH_INJECTION_TIMING:      // S
         case EngineParameter::RH_INJECTION_TIMING:
-            arg_assert(data.size() == 2);
-            return ((data[0] << 8) | (data[1])) * 0.01 * 0.001;
+            arg_assert(data.size() >= 2);
+            return ((*(data++) << 8) | *(data++)) * 0.01 * 0.001;
         case EngineParameter::IGNITION_TIMING:          // deg BTDC
-            arg_assert(data.size() == 1);
-            return 110.0 - data[0];
+            arg_assert(data.size() >= 1);
+            return 110.0 - *(data++);
         case EngineParameter::AAC_VALVE:                // %
-            arg_assert(data.size() == 1);
-            return data[0] / 2.0;
+            arg_assert(data.size() >= 1);
+            return *(data++) / 2.0;
         case EngineParameter::LH_AIR_FUEL_ALPHA:        // %
         case EngineParameter::RH_AIR_FUEL_ALPHA:
         case EngineParameter::LH_AIR_FUEL_ALPHA_SELF_LEARN:
         case EngineParameter::RH_AIR_FUEL_ALPHA_SELF_LEARN:
         case EngineParameter::WASTE_GATE_SOLENOID:
-            arg_assert(data.size() == 1);
-            return data[0];
+            arg_assert(data.size() >= 1);
+            return *(data++);
         case EngineParameter::MR_FC_MNT:                // RICH/LEAN
-            arg_assert(data.size() == 1);
-            return data[0];
+            arg_assert(data.size() >= 1);
+            return *(data++);
         case EngineParameter::TURBO_BOOST_SENSOR:       // V
         case EngineParameter::FPCM_DR_VOLTAGE:
         case EngineParameter::FUEL_GAUGE_VOLTAGE:
             // TODO: All these voltages have unknown scaling. It's likely x20
             // based on the other single-byte mV register scalings, but this is
             // a guess.
-            arg_assert(data.size() == 1);
-            return data[0] * 20 * 0.001;
+            arg_assert(data.size() >= 1);
+            return *(data++) * 20 * 0.001;
         case EngineParameter::ENGINE_MOUNT:             // ??
         case EngineParameter::POSITION_COUNTER:
         case EngineParameter::PURGE_CONTROL_VALVE:
             // TODO: All these parameters track an unknown quantity.
-            arg_assert(data.size() == 1);
-            return data[0];
+            arg_assert(data.size() >= 1);
+            return *(data++);
         case EngineParameter::DIGITAL_BIT_REGISTER1:    // bit regs
         case EngineParameter::DIGITAL_BIT_REGISTER2:
         case EngineParameter::DIGITAL_BIT_REGISTER3:
             // TODO: The bit registers really need breaking out separately.
-            arg_assert(data.size() == 1);
-            return data[0];
+            arg_assert(data.size() >= 1);
+            return *(data++);
         default:
             std::string error = cmn::pformat("Unknown engine parameter: %02x", parameter);
             throw std::invalid_argument(error);

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "common.h"
+
 
 /**
  * @brief An engine parameter that can be queried from the ECU.
@@ -62,12 +64,15 @@ std::vector<uint8_t> engineParameterCommand(EngineParameter parameter);
  *      require more bytes to decode than others.
  *
  * @param parameter The \c EngineParameter to decode the byte sequence as.
- * @param data The byte sequence to decode.
- * @return Parameter value, in the unit described by the parameter.
+ * @param data A range of bytes (uint8_t) to decode. This range will be advanced
+ *      by the number of bytes consumed by the decode.
+ * @return Parameter value, expressed as a double, in the unit described by the
+ *      parameter.
  * @throws std::invalid_argument if \c parameter is not valid, or if the \c data
- *      vector is the wrong length to decode the requested parameter from.
+ *      range is too short to decode the requested parameter from.
  */
-double engineParameterDecode(EngineParameter parameter, const std::vector<uint8_t>& data);
+double engineParameterDecode(EngineParameter parameter,
+                             cmn::range<std::vector<uint8_t>::const_iterator>& data);
 
 /**
  * @brief Retrieves a string identifier for an \c EngineParameter .
